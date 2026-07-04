@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Form Uji</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    {% include 'partials/header.html' %}
+
+    <main class="page">
+        <div class="wrap">
+            <div class="subheader">
+                <a class="back-btn" onclick="window.location.href='{{ url_for('index') }}';">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>
+                    Kembali
+                </a>
+                <span class="crumb">TEST 01 / KUISIONER PSIKOLOGI</span>
+            </div>
+
+            <div class="sub-hero">
+                <h2>Kuisioner Psikologi</h2>
+                <p>Tiga skala laporan mandiri. Pilih salah satu untuk mulai mengisi &mdash; setiap skala akan terbuka di tab baru.</p>
+            </div>
+
+            <div class="sub-grid">
+                <a class="sub-card" href="{{ url_for('kuesioner_dass') }}" target="_blank" rel="noopener">
+                    <span class="sub-num mono">01</span>
+                    <h4>Kuisioner DASS-21</h4>
+                    <p class="meta">21 pernyataan &middot; skala 0&ndash;3</p>
+                    <span class="go">Mulai
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+                    </span>
+                </a>
+
+                <a class="sub-card" href="{{ url_for('kuesioner_afek_negatif') }}" target="_blank" rel="noopener">
+                    <span class="sub-num mono">02</span>
+                    <h4>Skala Afeksi Negatif</h4>
+                    <p class="meta">20 pernyataan &middot; STS&ndash;SS</p>
+                    <span class="go">Mulai
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+                    </span>
+                </a>
+
+                <a class="sub-card" href="{{ url_for('kuesioner_afek_positif') }}" target="_blank" rel="noopener">
+                    <span class="sub-num mono">03</span>
+                    <h4>Skala Afeksi Positif</h4>
+                    <p class="meta">20 pernyataan &middot; STS&ndash;SS</p>
+                    <span class="go">Mulai
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+                    </span>
+                </a>
+            </div>
+        </div>
+    </main>
+
+    {% include 'partials/footer.html' %}
+</body>
+</html>

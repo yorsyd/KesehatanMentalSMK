@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deteksi Fokus Eye Tracking</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+    {% include 'partials/header.html' %}
+
+    <main class="page">
+        <div class="wrap">
+            <div class="subheader">
+                <button class="back-btn" onclick="window.location.href='{{ url_for('index') }}';">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>
+                    Kembali
+                </button>
+                <span class="crumb">TEST 03 / DETEKSI FOKUS EYE TRACKING</span>
+            </div>
+
+            <section class="hero">
+                <div class="eyebrow">Platform Asesmen Kesehatan Mental Siswa SMK</div>
+                <h1>Deteksi fokus eye tracking dalam satu sesi</h1>
+                <p class="lede">Halaman ini menampung modul pelacakan fokus berbasis eye tracking. Saat modul siap, area ini bisa dipakai untuk kamera, status rekaman, dan hasil analisis fokus.</p>
+            </section>
+
+            <div class="placeholder">
+                <div class="glyph-wrap">
+                    <svg width="52" height="52" viewBox="0 0 220 56" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M10 40 L 60 16 L 100 38 L 150 12 L 205 30" stroke="#4a4fd6" stroke-width="1.6" stroke-dasharray="3 5" stroke-linecap="round"/>
+                        <circle cx="10" cy="40" r="4" fill="#4a4fd6"/>
+                        <circle cx="60" cy="16" r="5.5" fill="#4a4fd6"/>
+                        <circle cx="100" cy="38" r="3.5" fill="#4a4fd6"/>
+                        <circle cx="150" cy="12" r="6.5" fill="#4a4fd6"/>
+                        <circle cx="205" cy="30" r="4" fill="#4a4fd6"/>
+                    </svg>
+                </div>
+                <h2>Modul ini sedang disiapkan</h2>
+                <p>Deteksi fokus melalui eye tracking belum tersedia di halaman ini. Tautkan modul ini ke halaman pelacakannya bila sudah siap.</p>
+                <a class="back-btn" href="{{ url_for('index') }}">Kembali ke beranda</a>
+            </div>
+        </div>
+    </main>
+
+    {% include 'partials/footer.html' %}
+</body>
+</html>

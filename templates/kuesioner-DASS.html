@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kuisioner DASS-21</title>
+<style>
+  :root{
+    --bg:#f5f6f8;
+    --card:#ffffff;
+    --accent:#3b5bdb;
+    --accent-light:#e8ecff;
+    --text:#1f2430;
+    --muted:#6b7280;
+    --border:#e2e4ea;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:'Segoe UI', system-ui, -apple-system, sans-serif;
+    background:var(--bg);
+    color:var(--text);
+    padding:32px 16px 80px;
+  }
+  .container{
+    max-width:720px;
+    margin:0 auto;
+  }
+  h1{
+    font-size:1.5rem;
+    margin-bottom:4px;
+  }
+  p.subtitle{
+    color:var(--muted);
+    margin-top:0;
+    margin-bottom:28px;
+    font-size:0.95rem;
+  }
+  .question-card{
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:20px 22px;
+    margin-bottom:16px;
+    box-shadow:0 1px 3px rgba(0,0,0,0.04);
+  }
+  .question-number{
+    font-size:0.8rem;
+    font-weight:600;
+    color:var(--accent);
+    text-transform:uppercase;
+    letter-spacing:0.03em;
+    margin-bottom:6px;
+  }
+  .question-text{
+    font-size:1rem;
+    line-height:1.5;
+    margin-bottom:14px;
+  }
+  .options{
+    display:flex;
+    flex-direction:row;
+    flex-wrap:wrap;
+    gap:8px;
+  }
+  .option{
+    display:flex;
+    flex:1 1 0;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    padding:10px 8px;
+    border-radius:8px;
+    border:1px solid var(--border);
+    cursor:pointer;
+    transition:background 0.15s, border-color 0.15s;
+    text-align:center;
+    min-width:70px;
+  }
+  .option:hover{
+    background:var(--accent-light);
+  }
+  .option input[type="checkbox"]{
+    width:18px;
+    height:18px;
+    accent-color:var(--accent);
+    cursor:pointer;
+    flex-shrink:0;
+  }
+  .option.checked{
+    background:var(--accent-light);
+    border-color:var(--accent);
+  }
+  .option-label{
+    font-size:0.92rem;
+  }
+  .option-value{
+    font-weight:700;
+    color:var(--accent);
+    margin-right:2px;
+  }
+  .footer-bar{
+    position:fixed;
+    bottom:0;
+    left:0;
+    right:0;
+    background:var(--card);
+    border-top:1px solid var(--border);
+    padding:14px 16px;
+    display:flex;
+    justify-content:center;
+    gap:16px;
+    align-items:center;
+  }
+  .submit-btn{
+    background:var(--accent);
+    color:#fff;
+    border:none;
+    padding:12px 28px;
+    border-radius:8px;
+    font-size:0.95rem;
+    font-weight:600;
+    cursor:pointer;
+  }
+  .submit-btn:hover{
+    opacity:0.9;
+  }
+  .progress{
+    font-size:0.85rem;
+    color:var(--muted);
+  }
+  .result-box{
+    display:none;
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:20px 22px;
+    margin-bottom:20px;
+    font-size:0.95rem;
+  }
+  .result-box.show{
+    display:block;
+  }
+  @media (max-width: 480px){
+    .options{
+      flex-direction:column;
+    }
+    .option{
+      justify-content:flex-start;
+      min-width:auto;
+    }
+  }
+</style>
+</head>
+<body>
+
+{% include 'partials/header.html' %}
+
+<div class="container">
+  <h1>Kuisioner DASS-21</h1>
+  <p class="subtitle">Pilih salah satu jawaban (0, 1, 2, atau 3) untuk setiap pernyataan di bawah ini yang paling menggambarkan diri Anda <b>satu minggu terakhir</b>.<br>
+  0 : Tidak ada atau tidak pernah dialami <br>
+  1 : kadang-kadang dialami <br>
+  2 : Sering dialami <br>
+  3	: Sangat sering dialami, atau hampir setiap saat  dialami <br>
+
+  </p>
+
+  <div class="result-box" id="resultBox"></div>
+
+  <form id="quizForm"></form>
+</div>
+
+<div class="footer-bar">
+  <span class="progress" id="progressText">0 / 21 terjawab</span>
+  <button type="button" class="submit-btn" id="submitBtn">Kirim Jawaban</button>
+</div>
+
+{% include 'partials/footer.html' %}
+
+<script>
+const questions = [
+  "Saya sama sekali tidak dapat merasakan perasaan positif (contoh: merasa gembira, bangga, dsb).",
+  "Saya merasa sulit berinisiatif melakukan sesuatu.",
+  "Saya merasa tidak ada lagi yang bisa saya harapkan.",
+  "Saya merasa sedih dan tertekan.",
+  "Saya tidak bisa merasa antusias terhadap hal apapun.",
+  "Saya merasa diri saya tidak berharga.",
+  "Saya merasa hidup ini tidak berarti.",
+  "Saya merasa rongga mulut saya kering.",
+  "Saya merasa kesulitan bernafas (misalnya seringkali terengah-engah atau tidak dapat bernapas padahal tidak melakukan aktivitas fisik sebelumnya).",
+  "Saya merasa gemetar (misalnya pada tangan).",
+  "Saya merasa khawatir dengan situasi dimana saya mungkin menjadi panik dan mempermalukan diri sendiri.",
+  "Saya merasa hampir panik.",
+  "Saya menyadari kondisi jantung saya (seperti meningkatnya atau melemahnya detak jantung) meskipun sedang tidak melakukan aktivitas fisik.",
+  "Saya merasa ketakutan tanpa alasan yang jelas.",
+  "Saya merasa sulit untuk beristirahat.",
+  "Saya cenderung menunjukkan reaksi berlebihan terhadap suatu situasi",
+  "Saya merasa energi saya terkuras karena terlalu cemas.",
+  "Saya merasa gelisah.",
+  "Saya merasa sulit untuk merasa tenang",
+  "Saya sulit untuk bersabar dalam menghadapi gangguan yang terjadi ketika sedang melakukan sesuatu.",
+  "Perasaan saya mudah tergugah atau tersentuh."
+];
+
+const form = document.getElementById('quizForm');
+const progressText = document.getElementById('progressText');
+const resultBox = document.getElementById('resultBox');
+
+questions.forEach((qText, qIndex) => {
+  const qNum = qIndex + 1;
+
+  const card = document.createElement('div');
+  card.className = 'question-card';
+
+  const numEl = document.createElement('div');
+  numEl.className = 'question-number';
+  numEl.textContent = 'Pertanyaan ' + qNum;
+  card.appendChild(numEl);
+
+  const textEl = document.createElement('div');
+  textEl.className = 'question-text';
+  textEl.textContent = qText;
+  card.appendChild(textEl);
+
+  const optionsEl = document.createElement('div');
+  optionsEl.className = 'options';
+
+  [0, 1, 2, 3].forEach(val => {
+    const label = document.createElement('label');
+    label.className = 'option';
+
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.name = 'q' + qNum;
+    checkbox.value = val;
+    checkbox.dataset.qnum = qNum;
+
+    checkbox.addEventListener('change', function() {
+      // Enforce single selection per question
+      const siblings = form.querySelectorAll('input[name="q' + qNum + '"]');
+      siblings.forEach(sib => {
+        if (sib !== checkbox) {
+          sib.checked = false;
+          sib.closest('.option').classList.remove('checked');
+        }
+      });
+      this.closest('.option').classList.toggle('checked', this.checked);
+      updateProgress();
+    });
+
+    const labelText = document.createElement('span');
+    labelText.className = 'option-label';
+    labelText.innerHTML = '<span class="option-value">' + val + '</span>';
+
+    label.appendChild(checkbox);
+    label.appendChild(labelText);
+    optionsEl.appendChild(label);
+  });
+
+  card.appendChild(optionsEl);
+  form.appendChild(card);
+});
+
+function updateProgress() {
+  let answered = 0;
+  for (let i = 1; i <= questions.length; i++) {
+    if (form.querySelector('input[name="q' + i + '"]:checked')) {
+      answered++;
+    }
+  }
+  progressText.textContent = answered + ' / ' + questions.length + ' terjawab';
+}
+
+document.getElementById('submitBtn').addEventListener('click', function() {
+  const answers = {};
+  let unanswered = [];
+
+  for (let i = 1; i <= questions.length; i++) {
+    const checked = form.querySelector('input[name="q' + i + '"]:checked');
+    if (checked) {
+      answers['q' + i] = parseInt(checked.value, 10);
+    } else {
+      unanswered.push(i);
+    }
+  }
+
+  if (unanswered.length > 0) {
+    resultBox.className = 'result-box show';
+    resultBox.innerHTML = '<strong>Belum lengkap.</strong> Pertanyaan berikut belum dijawab: ' + unanswered.join(', ');
+    resultBox.scrollIntoView({behavior:'smooth'});
+    return;
+  }
+
+  const total = Object.values(answers).reduce((sum, v) => sum + v, 0);
+
+  let output = '<strong>Jawaban terkumpul.</strong><br>Total skor: ' + total + '<br><br>';
+  output += '<div style="font-family:monospace; font-size:0.85rem; white-space:pre-wrap;">' + JSON.stringify(answers, null, 2) + '</div>';
+
+  resultBox.className = 'result-box show';
+  resultBox.innerHTML = output;
+  resultBox.scrollIntoView({behavior:'smooth'});
+});
+</script>
+</body>
+</html>

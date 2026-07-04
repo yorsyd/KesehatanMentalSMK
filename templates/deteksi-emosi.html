@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deteksi Emosi DeepFace</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+    {% include 'partials/header.html' %}
+
+    <main class="page">
+        <div class="wrap">
+            <div class="wrap">
+                <div class="subheader">
+                <button class="back-btn" onclick="window.location.href='{{ url_for('index') }}';">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>
+                    Kembali
+                </button>
+                <span class="crumb">TEST 02 / DETEKSI EMOSI</span>
+            </div>
+
+            <section class="hero">
+                <div class="eyebrow">Platform Asesmen Kesehatan Mental Siswa SMK</div>
+                <h1>Deteksi emosi visual dalam satu sesi</h1>
+                <p class="lede">Rekam wajah selama 60 detik, lalu sistem akan menghitung emosi yang paling dominan dari frame video. Tampilan ini disesuaikan agar konsisten dengan halaman placeholder deteksi wajah.</p>
+            </section> 
+
+            <div class="layout">
+                <section class="panel camera-panel">
+                    <div class="panel-head">
+                        <div class="panel-title">
+                            <h2>Ruang kamera</h2>
+                            <p>Pastikan wajah terlihat jelas dan tetap berada di tengah frame.</p>
+                        </div>
+                        <div class="status-pill"><span class="dot"></span>Siap merekam</div>
+                    </div>
+
+                    <div class="video-frame">
+                        <video id="videoElement" autoplay playsinline muted></video>
+                        <div id="overlay" class="overlay">
+                            <div id="timerText" class="timer">Merekam: 60s</div>
+                            <div id="statusText" class="caption">Mohon tetap di depan kamera...</div>
+                        </div>
+                    </div>
+
+                    <div class="camera-actions">
+                        <button id="recordBtn" class="btn btn-primary">Mulai Merekam</button>
+                        <button id="clearBtn" class="btn btn-secondary" type="button">Batalkan</button>
+                    </div>
+                </section>
+
+                <aside class="details">
+                    <section class="panel note-card">
+                        <h3>Petunjuk singkat</h3>
+                        <p>Gunakan pencahayaan yang cukup, hindari menutup wajah, dan jangan berpindah terlalu cepat selama perekaman berlangsung. Setelah selesai, hasil analisis akan muncul di panel bawah ini.</p>
+                    </section>
+
+                    <section id="resultArea" class="panel result-card">
+                        <h2>Hasil Analisis</h2>
+                        <div class="dominant-box">
+                            <div class="dominant-label">Emosi Paling Dominan</div>
+                            <p id="dominantEmotion"></p>
+                        </div>
+                        <div id="emotionBars"></div>
+                    </section>
+                </aside>
+            </div>
+        </div>
+    </main>
+
+    {% include 'partials/footer.html' %}
+
+    <script>
+        const videoElement = document.getElementById('videoElement');
+        const recordBtn = document.getElementById('recordBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const overlay = document.getElementById('overlay');
+        const timerText = document.getElementById('timerText');
+        const statusText = document.getElementById('statusText');
+        const resultArea = document.getElementById('resultArea');
+        const dominantEmotion = document.getElementById('dominantEmotion');
+        const emotionBars = document.getElementById('emotionBars');
+
+        let mediaRecorder;
+        let recordedChunks = [];
+        let timerInterval;
+
+        async function initCamera() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+                videoElement.srcObject = stream;
+                const options = MediaRecorder.isTypeSupported('video/webm;codecs=vp9')
+                    ? { mimeType: 'video/webm;codecs=vp9' }
+                    : MediaRecorder.isTypeSupported('video/webm')
+                        ? { mimeType: 'video/webm' }
+                        : {};
+
+                mediaRecorder = new MediaRecorder(stream, options);
+                
+                mediaRecorder.ondataavailable = function(e) {
+                    if (e.data.size > 0) {
+                        recordedChunks.push(e.data);
+                    }
+                };
+
+                mediaRecorder.onstop = sendVideoToServer;
+            } catch (err) {
+                alert('Tidak dapat mengakses kamera: ' + err.message);
+            }
+        }
+
+        initCamera();
+
+        recordBtn.addEventListener('click', () => {
+            if (!mediaRecorder || mediaRecorder.state === 'recording') {
+                return;
+            }
+
+            recordedChunks = [];
+            mediaRecorder.start();
+            recordBtn.disabled = true;
+            resultArea.classList.remove('show');
+            overlay.classList.add('show');
+            clearInterval(timerInterval);
+
+            let timeLeft = 60;
+            timerText.innerText = `Merekam: ${timeLeft}s`;
+            statusText.innerText = 'Mohon tetap di depan kamera...';
+
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                timerText.innerText = `Merekam: ${timeLeft}s`;
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    mediaRecorder.stop();
+                    timerText.innerText = 'Memproses...';
+                    statusText.innerText = 'Model sedang menganalisis frame, harap tunggu.';
+                }
+            }, 1000);
+        });
+
+        clearBtn.addEventListener('click', resetUI);
+
+        async function sendVideoToServer() {
+            const blob = new Blob(recordedChunks, { type: 'video/webm' });
+            const formData = new FormData();
+            formData.append('video', blob, 'video.webm');
+
+            try {
+                const response = await fetch('/analyze', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    alert(data.error || 'Terjadi kesalahan saat memproses video.');
+                    resetUI();
+                    return;
+                }
+
+                displayResults(data);
+            } catch (err) {
+                alert('Gagal menghubungi server.');
+            }
+            
+            resetUI();
+        }
+
+        function displayResults(data) {
+            dominantEmotion.innerText = `${data.dominant} (${data.percentages[data.dominant]}%)`;
+            emotionBars.innerHTML = '';
+
+            const sortedEmotions = Object.entries(data.percentages).sort((a, b) => b[1] - a[1]);
+
+            sortedEmotions.forEach(([emo, percentage]) => {
+                const barHtml = `
+                    <div class="emotion-row">
+                        <div class="meta">
+                            <span>${emo}</span>
+                            <span>${percentage}%</span>
+                        </div>
+                        <div class="bar-track">
+                            <div class="bar-fill" style="width: ${percentage}%"></div>
+                        </div>
+                    </div>
+                `;
+                emotionBars.innerHTML += barHtml;
+            });
+
+            resultArea.classList.add('show');
+        }
+
+        function resetUI() {
+            clearInterval(timerInterval);
+            overlay.classList.remove('show');
+            recordBtn.disabled = false;
+            recordBtn.innerText = 'Rekam Ulang';
+            timerText.innerText = 'Merekam: 60s';
+            statusText.innerText = 'Mohon tetap di depan kamera...';
+        }
+    </script>
+</body>
+</html>
