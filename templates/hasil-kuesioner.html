@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ringkasan Hasil</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap"
+    rel="stylesheet">
+  <style>
+    :root {
+      --bg: #eef1f4;
+      --panel: #ffffff;
+      --ink: #16232f;
+      --muted: #5b6b7a;
+      --line: #d7dee4;
+      --teal: #0f8b8d;
+      --teal-soft: #e2f2f2;
+      --amber: #b8873a;
+      --violet: #4a4fd6;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: 'IBM Plex Sans', system-ui, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      padding-bottom: 60px;
+    }
+
+    .mono {
+      font-family: 'IBM Plex Mono', monospace;
+    }
+
+    .wrap {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    header {
+      padding: 28px 0;
+      border-bottom: 1px solid var(--line);
+      margin-bottom: 8px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .brand-mark {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 600;
+      font-size: 1.05rem;
+    }
+
+    .brand-mark .dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--teal);
+      box-shadow: 0 0 0 3px var(--teal-soft);
+    }
+
+    .back-link {
+      font-size: 0.82rem;
+      color: var(--muted);
+      text-decoration: none;
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      padding: 7px 14px;
+    }
+
+    .back-link:hover {
+      border-color: var(--muted);
+    }
+
+    .hero {
+      padding: 36px 0 28px;
+    }
+
+    .eyebrow {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.75rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--teal);
+      margin-bottom: 12px;
+    }
+
+    h1 {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 2rem;
+      margin: 0 0 12px;
+      letter-spacing: -0.01em;
+    }
+
+    .lede {
+      color: var(--muted);
+      max-width: 60ch;
+      line-height: 1.6;
+      margin: 0;
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 10px;
+      padding: 8px 0 32px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-size: 0.85rem;
+      font-weight: 600;
+      border-radius: 8px;
+      padding: 10px 16px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--ink);
+      cursor: pointer;
+    }
+
+    .btn:hover {
+      background: #fafbfc;
+    }
+
+    .btn.danger {
+      color: #a13a3a;
+      border-color: #f0d3d3;
+    }
+
+    .section {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 26px 28px;
+      margin-bottom: 20px;
+    }
+
+    .section[data-accent="teal"] {
+      border-top: 3px solid var(--teal);
+    }
+
+    .section[data-accent="amber"] {
+      border-top: 3px solid var(--amber);
+    }
+
+    .section[data-accent="violet"] {
+      border-top: 3px solid var(--violet);
+    }
+
+    .section-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 6px;
+    }
+
+    .section-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 1.25rem;
+      margin: 0;
+    }
+
+    .section-meta {
+      font-size: 0.78rem;
+      color: var(--muted);
+      font-family: 'IBM Plex Mono', monospace;
+    }
+
+    .score-pill {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.82rem;
+      font-weight: 500;
+      background: var(--teal-soft);
+      color: var(--teal);
+      border-radius: 20px;
+      padding: 5px 12px;
+      white-space: nowrap;
+    }
+
+    .score-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .score-card {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 12px 14px;
+    }
+
+    .score-card .sc-label {
+      font-size: 0.76rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      font-family: 'IBM Plex Mono', monospace;
+    }
+
+    .score-card .sc-value {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin: 2px 0 6px;
+    }
+
+    .sev-badge {
+      display: inline-block;
+      font-size: 0.74rem;
+      font-weight: 600;
+      padding: 3px 10px;
+      border-radius: 20px;
+    }
+
+    .sev-normal {
+      background: #e3f5e9;
+      color: #2a8f52;
+    }
+
+    .sev-mild {
+      background: #fdf3d8;
+      color: #9a7413;
+    }
+
+    .sev-moderate {
+      background: #fde6d3;
+      color: #b2611a;
+    }
+
+    .sev-severe {
+      background: #fbdede;
+      color: #c03f3f;
+    }
+
+    .sev-extremely-severe {
+      background: #f4d2d2;
+      color: #96262c;
+    }
+
+    .sev-sangat-rendah {
+      background: #e3f5e9;
+      color: #2a8f52;
+    }
+
+    .sev-rendah {
+      background: #eaf6e6;
+      color: #4d8f2a;
+    }
+
+    .sev-sedang {
+      background: #fdf3d8;
+      color: #9a7413;
+    }
+
+    .sev-tinggi {
+      background: #fde6d3;
+      color: #b2611a;
+    }
+
+    .sev-sangat-tinggi {
+      background: #fbdede;
+      color: #c03f3f;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 26px 10px;
+    }
+
+    .empty-state p {
+      color: var(--muted);
+      margin: 0 0 14px;
+      font-size: 0.92rem;
+    }
+
+    .empty-state a {
+      color: var(--teal);
+      font-weight: 600;
+      text-decoration: none;
+      font-size: 0.9rem;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 14px;
+    }
+
+    th {
+      text-align: left;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.72rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--muted);
+      padding: 8px 6px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    td {
+      padding: 9px 6px;
+      font-size: 0.88rem;
+      border-bottom: 1px solid var(--line);
+      vertical-align: top;
+      line-height: 1.5;
+    }
+
+    td.qnum {
+      font-family: 'IBM Plex Mono', monospace;
+      color: var(--muted);
+      width: 34px;
+    }
+
+    td.ans {
+      font-weight: 600;
+      width: 56px;
+      text-align: center;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    footer {
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.78rem;
+      padding-top: 20px;
+    }
+
+    @media (max-width:600px) {
+      h1 {
+        font-size: 1.6rem;
+      }
+
+      .section {
+        padding: 20px 18px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  {% include 'partials/navbar.html' %}
+
+  <div class="wrap">
+    <div class="hero">
+      <div class="eyebrow">Ringkasan Hasil</div>
+      <h1>Semua jawaban dalam satu halaman.</h1>
+      <p class="lede">Halaman ini menampilkan jawaban yang tersimpan dari kuesioner DASS-21, Skala Afeksi Negatif, dan
+        Skala Afeksi Positif di perangkat ini. Isi ketiga kuesioner terlebih dahulu agar ringkasan lengkap.</p>
+    </div>
+
+    <div class="toolbar">
+      <button class="btn" onclick="location.reload()">Muat ulang</button>
+      <button class="btn" onclick="downloadJSON()">Unduh sebagai JSON</button>
+      <button class="btn danger" onclick="clearAll()">Hapus semua hasil</button>
+    </div>
+
+    <div id="results"></div>
+  </div>
+
+  {% include 'partials/footer.html' %}
+
+  <script>
+    const configs = [
+      { key: 'dass21_result', accent: 'teal', link: "{{ url_for('kuesioner_dass') }}", linkLabel: 'Isi kuesioner DASS-21', scale: '0 - 3', showScores: true },
+      { key: 'afeksi_negatif_result', accent: 'amber', link: "{{ url_for('kuesioner_afek_negatif') }}", linkLabel: 'Isi Skala Afeksi Negatif', scale: 'STS - TS - S - SS', showTotalCategory: true },
+      { key: 'afeksi_positif_result', accent: 'violet', link: "{{ url_for('kuesioner_afek_positif') }}", linkLabel: 'Isi Skala Afeksi Positif', scale: 'STS - TS - S - SS', showTotalCategory: true }
+    ];
+
+    const dassRanges = {
+      depression: [
+        { max: 9, label: 'Normal', cls: 'sev-normal' },
+        { max: 13, label: 'Mild', cls: 'sev-mild' },
+        { max: 20, label: 'Moderate', cls: 'sev-moderate' },
+        { max: 27, label: 'Severe', cls: 'sev-severe' },
+        { max: Infinity, label: 'Extremely Severe', cls: 'sev-extremely-severe' }
+      ],
+      anxiety: [
+        { max: 7, label: 'Normal', cls: 'sev-normal' },
+        { max: 9, label: 'Mild', cls: 'sev-mild' },
+        { max: 14, label: 'Moderate', cls: 'sev-moderate' },
+        { max: 19, label: 'Severe', cls: 'sev-severe' },
+        { max: Infinity, label: 'Extremely Severe', cls: 'sev-extremely-severe' }
+      ],
+      stress: [
+        { max: 14, label: 'Normal', cls: 'sev-normal' },
+        { max: 18, label: 'Mild', cls: 'sev-mild' },
+        { max: 25, label: 'Moderate', cls: 'sev-moderate' },
+        { max: 33, label: 'Severe', cls: 'sev-severe' },
+        { max: Infinity, label: 'Extremely Severe', cls: 'sev-extremely-severe' }
+      ]
+    };
+
+    function classifyDass(type, score) {
+      const ranges = dassRanges[type];
+      for (const r of ranges) {
+        if (score <= r.max) return r;
+      }
+      return ranges[ranges.length - 1];
+    }
+
+    function affectSevClass(category) {
+      const map = {
+        'Sangat Rendah': 'sev-sangat-rendah',
+        'Rendah': 'sev-rendah',
+        'Sedang': 'sev-sedang',
+        'Tinggi': 'sev-tinggi',
+        'Sangat Tinggi': 'sev-sangat-tinggi'
+      };
+      return map[category] || 'sev-sedang';
+    }
+
+    function formatDate(iso) {
+      try {
+        const d = new Date(iso);
+        return d.toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' });
+      } catch (e) {
+        return iso;
+      }
+    }
+
+    function render() {
+      const container = document.getElementById('results');
+      container.innerHTML = '';
+
+      configs.forEach(cfg => {
+        const raw = localStorage.getItem(cfg.key);
+        const section = document.createElement('div');
+        section.className = 'section';
+        section.dataset.accent = cfg.accent;
+
+        if (!raw) {
+          section.innerHTML = `
+        <div class="section-head">
+          <h2 class="section-title">${cfg.linkLabel.replace('Isi ', '')}</h2>
+        </div>
+        <div class="empty-state">
+          <p>Belum ada jawaban tersimpan untuk kuesioner ini.</p>
+          <a href="${cfg.link}">${cfg.linkLabel} &rarr;</a>
+        </div>
+      `;
+          container.appendChild(section);
+          return;
+        }
+
+        let data;
+        try {
+          data = JSON.parse(raw);
+        } catch (e) {
+          section.innerHTML = '<p>Data tersimpan tidak valid.</p>';
+          container.appendChild(section);
+          return;
+        }
+
+        const rows = data.questions.map((qText, idx) => {
+          const qKey = 'q' + (idx + 1);
+          const ans = data.answers[qKey] !== undefined ? data.answers[qKey] : '&mdash;';
+          return `
+        <tr>
+          <td class="qnum">${idx + 1}</td>
+          <td>${qText}</td>
+          <td class="ans">${ans}</td>
+        </tr>
+      `;
+        }).join('');
+
+        let scoreBlockHTML = '';
+        let scorePill = '';
+
+        if (cfg.showScores) {
+          const dep = classifyDass('depression', data.scores.depression);
+          const anx = classifyDass('anxiety', data.scores.anxiety);
+          const str = classifyDass('stress', data.scores.stress);
+
+          scoreBlockHTML = `
+        <div class="score-grid">
+          <div class="score-card">
+            <div class="sc-label">Depression</div>
+            <div class="sc-value">${data.scores.depression}</div>
+            <span class="sev-badge ${dep.cls}">${dep.label}</span>
+          </div>
+          <div class="score-card">
+            <div class="sc-label">Anxiety</div>
+            <div class="sc-value">${data.scores.anxiety}</div>
+            <span class="sev-badge ${anx.cls}">${anx.label}</span>
+          </div>
+          <div class="score-card">
+            <div class="sc-label">Stress</div>
+            <div class="sc-value">${data.scores.stress}</div>
+            <span class="sev-badge ${str.cls}">${str.label}</span>
+          </div>
+        </div>
+      `;
+        } else if (cfg.showTotalCategory) {
+          const cls = affectSevClass(data.category);
+          scoreBlockHTML = `
+        <div class="score-grid" style="grid-template-columns:1fr;">
+          <div class="score-card">
+            <div class="sc-label">Total Skor</div>
+            <div class="sc-value">${data.total}</div>
+            <span class="sev-badge ${cls}">${data.category}</span>
+          </div>
+        </div>
+      `;
+        } else {
+          scorePill = `<span class="score-pill">Skala: ${cfg.scale}</span>`;
+        }
+
+        section.innerHTML = `
+      <div class="section-head">
+        <div>
+          <h2 class="section-title">${data.label}</h2>
+          <div class="section-meta">Diisi ${formatDate(data.submittedAt)}</div>
+        </div>
+        ${scorePill}
+      </div>
+      ${scoreBlockHTML}
+      <table>
+        <thead>
+          <tr><th>No</th><th>Pernyataan</th><th>Jawaban</th></tr>
+        </thead>
+        <tbody>
+          ${rows}
+        </tbody>
+      </table>
+    `;
+        container.appendChild(section);
+      });
+    }
+
+    function downloadJSON() {
+      const combined = {};
+      let hasAny = false;
+      configs.forEach(cfg => {
+        const raw = localStorage.getItem(cfg.key);
+        if (raw) {
+          try {
+            combined[cfg.key] = JSON.parse(raw);
+            hasAny = true;
+          } catch (e) { }
+        }
+      });
+
+      if (!hasAny) {
+        alert('Belum ada hasil yang bisa diunduh.');
+        return;
+      }
+
+      const blob = new Blob([JSON.stringify(combined, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'hasil-kuesioner.json';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    function clearAll() {
+      if (!confirm('Hapus semua hasil kuesioner yang tersimpan di browser ini?')) return;
+      configs.forEach(cfg => localStorage.removeItem(cfg.key));
+      render();
+    }
+
+    render();
+  </script>
+
+</body>
+
+</html>

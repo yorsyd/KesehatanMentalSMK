@@ -10,6 +10,11 @@
     --amber-soft:#f5ede0;
     --violet:#4a4fd6;
     --violet-soft:#e9e9fb;
+    --accent:#3b5bdb;
+    --accent-light:#e8ecff;
+    --text:#1f2430;
+    --muted:#6b7280;
+    --border:#e2e4ea;
   }
   *{box-sizing:border-box;}
   html{scroll-behavior:smooth;}

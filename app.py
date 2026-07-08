@@ -35,6 +35,10 @@ def kuesioner_afek_negatif():
 def kuesioner_afek_positif():
     return render_template('kuesioner_SkalaAfekPositif.html')
 
+@app.route('/hasil-kuesioner', methods=['GET'])
+def hasil_kuesioner():
+    return render_template('hasil-kuesioner.html')
+
 @app.route('/analyze', methods=['POST'])
 def analyze_video():
     if 'video' not in request.files: 

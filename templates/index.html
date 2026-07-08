@@ -1,90 +1,106 @@
 <!DOCTYPE html>
 <html lang="id">
-  <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Platform Asesmen Psikologis</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-  </head>
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Platform Asesmen Psikologis</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
 <body>
 
-{% include 'partials/header.html' %}
+  {% include 'partials/navbar.html' %}
 
-<!-- HOME VIEW -->
-<section class="view active" id="view-home">
-  <div class="wrap">
-    <div class="hero">
-      <div class="eyebrow">Platform Asesmen Kesehatan Mental Siswa SMK</div>
-      <h1>Tiga jenis asesmen, satu sesi.</h1>
-      <p class="lede">Pilih modul yang ingin dijalankan. Setiap modul menangkap sinyal yang berbeda &mdash; laporan psikologi mandiri, ekspresi wajah, dan pola gerak mata &mdash; untuk membentuk gambaran yang lengkap tentang kesehatan mental.</p>
+  <!-- HOME VIEW -->
+  <section class="view active" id="view-home">
+    <div class="wrap">
+      <div class="hero">
+        <div class="eyebrow">Platform Asesmen Kesehatan Mental Siswa SMK</div>
+        <h1>Tiga jenis asesmen, satu sesi.</h1>
+        <p class="lede">Pilih modul yang ingin dijalankan. Setiap modul menangkap sinyal yang berbeda &mdash; laporan
+          psikologi mandiri, ekspresi wajah, dan pola gerak mata &mdash; untuk membentuk gambaran yang lengkap tentang
+          kesehatan mental.</p>
+      </div>
+
+      <div class="grid">
+        <button class="card" data-channel="1" onclick="window.location.href='{{ url_for('form_uji') }}';">
+          <div class="card-top">
+            <span class="ch-code">CH.01</span>
+          </div>
+          <svg class="glyph" viewBox="0 0 220 56" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <polyline points="4,44 4,30 40,30 40,42 76,42 76,18 112,18 112,36 148,36 148,10 184,10 184,26 216,26"
+              stroke="#0f8b8d" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" />
+          </svg>
+          <h3>Kuisioner Psikologi</h3>
+          <p>Skala laporan mandiri untuk mengukur gejala depresi, kecemasan, stres, dan afeksi.</p>
+          <span class="card-cta">Buka modul
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4">
+              <path d="M5 12h14M13 6l6 6-6 6" />
+            </svg>
+          </span>
+        </button>
+
+        <button class="card" data-channel="2" onclick="window.location.href='{{ url_for('deteksi_emosi') }}';">
+          <div class="card-top">
+            <span class="ch-code">CH.02</span>
+          </div>
+          <svg class="glyph" viewBox="0 0 220 56" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M4 40 C 30 40, 30 10, 55 10 S 80 44, 105 44 S 130 14, 155 14 S 180 40, 216 32" stroke="#b8873a"
+              stroke-width="2.5" stroke-linecap="round" />
+            <circle cx="55" cy="10" r="2.6" fill="#b8873a" />
+            <circle cx="105" cy="44" r="2.6" fill="#b8873a" />
+            <circle cx="155" cy="14" r="2.6" fill="#b8873a" />
+          </svg>
+          <h3>Deteksi Emosi Citra Wajah</h3>
+          <p>Analisis ekspresi wajah secara visual untuk mengenali indikasi emosi yang tampak.</p>
+          <span class="card-cta">Buka modul
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4">
+              <path d="M5 12h14M13 6l6 6-6 6" />
+            </svg>
+          </span>
+        </button>
+
+        <button class="card" data-channel="3" onclick="window.location.href='{{ url_for('deteksi_fokus') }}';">
+          <div class="card-top">
+            <span class="ch-code">CH.03</span>
+          </div>
+          <svg class="glyph" viewBox="0 0 220 56" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M10 40 L 60 16 L 100 38 L 150 12 L 205 30" stroke="#4a4fd6" stroke-width="1.6"
+              stroke-dasharray="3 5" stroke-linecap="round" />
+            <circle cx="10" cy="40" r="4" fill="#4a4fd6" />
+            <circle cx="60" cy="16" r="5.5" fill="#4a4fd6" />
+            <circle cx="100" cy="38" r="3.5" fill="#4a4fd6" />
+            <circle cx="150" cy="12" r="6.5" fill="#4a4fd6" />
+            <circle cx="205" cy="30" r="4" fill="#4a4fd6" />
+          </svg>
+          <h3>Deteksi Fokus Eye Tracking</h3>
+          <p>Pelacakan pola gerak dan titik fiksasi mata untuk menilai fokus dan atensi.</p>
+          <span class="card-cta">Buka modul
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4">
+              <path d="M5 12h14M13 6l6 6-6 6" />
+            </svg>
+          </span>
+        </button>
+      </div>
     </div>
+  </section>
 
-    <div class="grid">
-      <button class="card" data-channel="1" onclick="window.location.href='{{ url_for('form_uji') }}';">
-        <div class="card-top">
-          <span class="ch-code">CH.01</span>
-        </div>
-        <svg class="glyph" viewBox="0 0 220 56" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <polyline points="4,44 4,30 40,30 40,42 76,42 76,18 112,18 112,36 148,36 148,10 184,10 184,26 216,26" stroke="#0f8b8d" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
-        </svg>
-        <h3>Kuisioner Psikologi</h3>
-        <p>Skala laporan mandiri untuk mengukur gejala depresi, kecemasan, stres, dan afeksi.</p>
-        <span class="card-cta">Buka modul
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-        </span>
-      </button>
+  {% include 'partials/footer.html' %}
 
-      <button class="card" data-channel="2" onclick="window.location.href='{{ url_for('deteksi_emosi') }}';">
-        <div class="card-top">
-          <span class="ch-code">CH.02</span>
-        </div>
-        <svg class="glyph" viewBox="0 0 220 56" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M4 40 C 30 40, 30 10, 55 10 S 80 44, 105 44 S 130 14, 155 14 S 180 40, 216 32" stroke="#b8873a" stroke-width="2.5" stroke-linecap="round"/>
-          <circle cx="55" cy="10" r="2.6" fill="#b8873a"/>
-          <circle cx="105" cy="44" r="2.6" fill="#b8873a"/>
-          <circle cx="155" cy="14" r="2.6" fill="#b8873a"/>
-        </svg>
-        <h3>Deteksi Emosi Citra Wajah</h3>
-        <p>Analisis ekspresi wajah secara visual untuk mengenali indikasi emosi yang tampak.</p>
-        <span class="card-cta">Buka modul
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-        </span>
-      </button>
-
-      <button class="card" data-channel="3" onclick="window.location.href='{{ url_for('deteksi_fokus') }}';">
-        <div class="card-top">
-          <span class="ch-code">CH.03</span>
-        </div>
-        <svg class="glyph" viewBox="0 0 220 56" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M10 40 L 60 16 L 100 38 L 150 12 L 205 30" stroke="#4a4fd6" stroke-width="1.6" stroke-dasharray="3 5" stroke-linecap="round"/>
-          <circle cx="10" cy="40" r="4" fill="#4a4fd6"/>
-          <circle cx="60" cy="16" r="5.5" fill="#4a4fd6"/>
-          <circle cx="100" cy="38" r="3.5" fill="#4a4fd6"/>
-          <circle cx="150" cy="12" r="6.5" fill="#4a4fd6"/>
-          <circle cx="205" cy="30" r="4" fill="#4a4fd6"/>
-        </svg>
-        <h3>Deteksi Fokus Eye Tracking</h3>
-        <p>Pelacakan pola gerak dan titik fiksasi mata untuk menilai fokus dan atensi.</p>
-        <span class="card-cta">Buka modul
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-        </span>
-      </button>
-    </div>
-  </div>
-</section>
-
-{% include 'partials/footer.html' %}
-
-<script>
-function showView(id){
-  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-  document.getElementById(id).classList.add('active');
-  window.scrollTo({top:0, behavior:'smooth'});
-}
-</script>
+  <script>
+    function showView(id) {
+      document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  </script>
 
 </body>
+
 </html>
