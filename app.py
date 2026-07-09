@@ -58,8 +58,8 @@ def analyze_video():
     cap.release()
     os.remove(path)
 
-    # Ambil sampel ~60 frame merata
-    sampled = frames[::max(1, len(frames)//60)][:60] if frames else []
+    # Ambil sampel ~180 frame merata
+    sampled = frames[::max(1, len(frames)//180)][:180] if frames else []
     if not sampled: 
         return jsonify({'error': 'Video kosong atau gagal dibaca'}), 400
 
