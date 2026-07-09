@@ -1,65 +1,90 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Deteksi Emosi DeepFace</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 
 <body>
-    {% include 'partials/header.html' %}
+    {% include 'partials/navbar.html' %}
 
     <main class="page">
         <div class="wrap">
             <div class="wrap">
                 <div class="subheader">
-                <button class="back-btn" onclick="window.location.href='{{ url_for('index') }}';">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>
-                    Kembali
-                </button>
-                <span class="crumb">TEST 02 / DETEKSI EMOSI</span>
-            </div>
+                    <button class="back-btn" onclick="window.location.href='{{ url_for('index') }}';">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4">
+                            <path d="M19 12H5M11 6l-6 6 6 6" />
+                        </svg>
+                        Kembali
+                    </button>
+                    <span class="crumb">TEST 02 / DETEKSI EMOSI</span>
+                </div>
 
-            <section class="hero">
-                <div class="eyebrow">Platform Asesmen Kesehatan Mental Siswa SMK</div>
-                <h1>Deteksi emosi visual dalam satu sesi</h1>
-                <p class="lede">Rekam wajah selama 60 detik, lalu sistem akan menghitung emosi yang paling dominan dari frame video. Tampilan ini disesuaikan agar konsisten dengan halaman placeholder deteksi wajah.</p>
-            </section> 
-
-            <div class="layout">
-                <section class="panel camera-panel">
-                    <div class="panel-head">
-                        <div class="panel-title">
-                            <h2>Ruang kamera</h2>
-                            <p>Pastikan wajah terlihat jelas dan tetap berada di tengah frame.</p>
-                        </div>
-                        <div class="status-pill"><span class="dot"></span>Siap merekam</div>
-                    </div>
-
-                    <div class="video-frame">
-                        <video id="videoElement" autoplay playsinline muted></video>
-                        <div id="overlay" class="overlay">
-                            <div id="timerText" class="timer">Merekam: 60s</div>
-                            <div id="statusText" class="caption">Mohon tetap di depan kamera...</div>
-                        </div>
-                    </div>
-
-                    <div class="camera-actions">
-                        <button id="recordBtn" class="btn btn-primary">Mulai Merekam</button>
-                        <button id="clearBtn" class="btn btn-secondary" type="button">Batalkan</button>
-                    </div>
+                <section class="hero">
+                    <div class="eyebrow">Platform Asesmen Kesehatan Mental Siswa SMK</div>
+                    <h1>Ceritakan perasaanmu saat ini</h1>
+                    <p class="lede">Bacalah pertanyaan di bawah, renungkan sejenak, lalu klik <strong>Mulai
+                            Sesi</strong>. Sistem akan merekam reaksi ekspresi wajahmu selama 3 menit dan menganalisis
+                        emosi yang paling dominan.</p>
                 </section>
 
-                <aside class="details">
-                    <section class="panel note-card">
-                        <h3>Petunjuk singkat</h3>
-                        <p>Gunakan pencahayaan yang cukup, hindari menutup wajah, dan jangan berpindah terlalu cepat selama perekaman berlangsung. Setelah selesai, hasil analisis akan muncul di panel bawah ini.</p>
+                <div class="layout-single">
+
+                    <!-- ── Box Pertanyaan Terbuka ── -->
+                    <section class="question-panel">
+                        <div class="qp-label">Refleksi Diri &nbsp;·&nbsp; Baca &amp; Renungkan</div>
+                        <p class="qp-intro">Ceritakan kepada dirimu sendiri tentang kehidupanmu saat ini. Pikirkan
+                            jawaban dari pertanyaan-pertanyaan berikut:</p>
+                        <ul class="question-list">
+                            <li>
+                                <span class="q-num">1</span>
+                                <span>Bagaimana perasaanmu hari ini secara keseluruhan — apakah ada sesuatu yang terasa
+                                    berat atau justru menyenangkan?</span>
+                            </li>
+                            <li>
+                                <span class="q-num">2</span>
+                                <span>Adakah situasi di sekolah, rumah, atau lingkungan sosialmu yang sedang membuatmu
+                                    khawatir atau tidak nyaman belakangan ini?</span>
+                            </li>
+                            <li>
+                                <span class="q-num">3</span>
+                                <span>Kapan terakhir kali kamu merasa benar-benar bahagia dan apa yang membuatnya
+                                    terjadi?</span>
+                            </li>
+                            <li>
+                                <span class="q-num">4</span>
+                                <span>Apakah ada seseorang — teman, keluarga, atau guru — yang saat ini menjadi sumber
+                                    kekuatanmu atau justru menjadi sumber tekananmu?</span>
+                            </li>
+                            <li>
+                                <span class="q-num">5</span>
+                                <span>Jika kamu bisa mengubah satu hal dalam hidupmu sekarang, apa yang paling ingin
+                                    kamu ubah dan mengapa?</span>
+                            </li>
+                        </ul>
                     </section>
 
+                    <!-- ── Session Controls ── -->
+                    <div class="session-controls">
+                        <button id="recordBtn" class="btn btn-primary">Mulai Sesi</button>
+                        <button id="clearBtn" class="btn btn-secondary" type="button">Batalkan</button>
+                        <div id="countdownDisplay" class="countdown-display">
+                            <span class="cd-dot"></span>
+                            <span id="cdTime" class="cd-time">3:00</span>
+                            <span class="cd-label">sesi berlangsung</span>
+                        </div>
+                    </div>
+
+                    <!-- ── Hasil Analisis ── -->
                     <section id="resultArea" class="panel result-card">
                         <h2>Hasil Analisis</h2>
                         <div class="dominant-box">
@@ -68,7 +93,8 @@
                         </div>
                         <div id="emotionBars"></div>
                     </section>
-                </aside>
+
+                </div><!-- /.layout-single -->
             </div>
         </div>
     </main>
@@ -76,12 +102,10 @@
     {% include 'partials/footer.html' %}
 
     <script>
-        const videoElement = document.getElementById('videoElement');
         const recordBtn = document.getElementById('recordBtn');
         const clearBtn = document.getElementById('clearBtn');
-        const overlay = document.getElementById('overlay');
-        const timerText = document.getElementById('timerText');
-        const statusText = document.getElementById('statusText');
+        const countdownDisplay = document.getElementById('countdownDisplay');
+        const cdTime = document.getElementById('cdTime');
         const resultArea = document.getElementById('resultArea');
         const dominantEmotion = document.getElementById('dominantEmotion');
         const emotionBars = document.getElementById('emotionBars');
@@ -89,26 +113,20 @@
         let mediaRecorder;
         let recordedChunks = [];
         let timerInterval;
+        let stream;
 
+        // ── Format seconds → M:SS ──
+        function formatTime(seconds) {
+            const m = Math.floor(seconds / 60);
+            const s = seconds % 60;
+            return `${m}:${s.toString().padStart(2, '0')}`;
+        }
+
+        // ── Init camera (hidden — only for recording) ──
         async function initCamera() {
             try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
-                videoElement.srcObject = stream;
-                const options = MediaRecorder.isTypeSupported('video/webm;codecs=vp9')
-                    ? { mimeType: 'video/webm;codecs=vp9' }
-                    : MediaRecorder.isTypeSupported('video/webm')
-                        ? { mimeType: 'video/webm' }
-                        : {};
-
-                mediaRecorder = new MediaRecorder(stream, options);
-                
-                mediaRecorder.ondataavailable = function(e) {
-                    if (e.data.size > 0) {
-                        recordedChunks.push(e.data);
-                    }
-                };
-
-                mediaRecorder.onstop = sendVideoToServer;
+                stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+                createRecorder();
             } catch (err) {
                 alert('Tidak dapat mengakses kamera: ' + err.message);
             }
@@ -116,36 +134,75 @@
 
         initCamera();
 
+        // ── Start recording ──
         recordBtn.addEventListener('click', () => {
-            if (!mediaRecorder || mediaRecorder.state === 'recording') {
-                return;
-            }
+            if (!mediaRecorder || mediaRecorder.state === 'recording') return;
 
             recordedChunks = [];
             mediaRecorder.start();
-            recordBtn.disabled = true;
-            resultArea.classList.remove('show');
-            overlay.classList.add('show');
-            clearInterval(timerInterval);
 
-            let timeLeft = 60;
-            timerText.innerText = `Merekam: ${timeLeft}s`;
-            statusText.innerText = 'Mohon tetap di depan kamera...';
+            recordBtn.disabled = true;
+            recordBtn.innerText = 'Sesi Berlangsung...';
+            resultArea.classList.remove('show');
+
+            countdownDisplay.classList.add('active');
+
+            let timeLeft = 180;
+            cdTime.innerText = formatTime(timeLeft);
+            clearInterval(timerInterval);
 
             timerInterval = setInterval(() => {
                 timeLeft--;
-                timerText.innerText = `Merekam: ${timeLeft}s`;
+                cdTime.innerText = formatTime(timeLeft);
                 if (timeLeft <= 0) {
                     clearInterval(timerInterval);
                     mediaRecorder.stop();
-                    timerText.innerText = 'Memproses...';
-                    statusText.innerText = 'Model sedang menganalisis frame, harap tunggu.';
+                    cdTime.innerText = '0:00';
+                    countdownDisplay.classList.remove('active');
+                    recordBtn.innerText = 'Memproses...';
                 }
             }, 1000);
         });
 
-        clearBtn.addEventListener('click', resetUI);
+        clearBtn.addEventListener('click', cancelSession);
 
+        // ── Cancel session: stop recorder without sending, then re-init ──
+        function cancelSession() {
+            clearInterval(timerInterval);
+
+            if (mediaRecorder && mediaRecorder.state === 'recording') {
+                // Detach the onstop handler so it does NOT send data to server
+                mediaRecorder.onstop = null;
+                mediaRecorder.stop();
+            }
+
+            recordedChunks = [];
+            resetUI();
+
+            // Re-create MediaRecorder so it can be started again
+            createRecorder();
+        }
+
+        // ── Create a fresh MediaRecorder from the existing stream ──
+        function createRecorder() {
+            if (!stream) return;
+
+            const options = MediaRecorder.isTypeSupported('video/webm;codecs=vp9')
+                ? { mimeType: 'video/webm;codecs=vp9' }
+                : MediaRecorder.isTypeSupported('video/webm')
+                    ? { mimeType: 'video/webm' }
+                    : {};
+
+            mediaRecorder = new MediaRecorder(stream, options);
+
+            mediaRecorder.ondataavailable = function (e) {
+                if (e.data.size > 0) recordedChunks.push(e.data);
+            };
+
+            mediaRecorder.onstop = sendVideoToServer;
+        }
+
+        // ── Send video to server ──
         async function sendVideoToServer() {
             const blob = new Blob(recordedChunks, { type: 'video/webm' });
             const formData = new FormData();
@@ -156,9 +213,9 @@
                     method: 'POST',
                     body: formData
                 });
-                
+
                 const data = await response.json();
-                
+
                 if (!response.ok) {
                     alert(data.error || 'Terjadi kesalahan saat memproses video.');
                     resetUI();
@@ -169,21 +226,35 @@
             } catch (err) {
                 alert('Gagal menghubungi server.');
             }
-            
+
             resetUI();
         }
 
+        // ── Terjemahan label emosi ──
+        const emosiLabel = {
+            angry: 'Marah',
+            disgust: 'Jijik',
+            fear: 'Takut',
+            happy: 'Senang',
+            sad: 'Sedih',
+            surprise: 'Terkejut',
+            neutral: 'Netral'
+        };
+
+        // ── Display results ──
         function displayResults(data) {
-            dominantEmotion.innerText = `${data.dominant} (${data.percentages[data.dominant]}%)`;
+            const dominanLabel = emosiLabel[data.dominant] || data.dominant;
+            dominantEmotion.innerText = `${dominanLabel} (${data.percentages[data.dominant]}%)`;
             emotionBars.innerHTML = '';
 
             const sortedEmotions = Object.entries(data.percentages).sort((a, b) => b[1] - a[1]);
 
             sortedEmotions.forEach(([emo, percentage]) => {
+                const label = emosiLabel[emo] || emo;
                 const barHtml = `
                     <div class="emotion-row">
                         <div class="meta">
-                            <span>${emo}</span>
+                            <span>${label}</span>
                             <span>${percentage}%</span>
                         </div>
                         <div class="bar-track">
@@ -197,14 +268,15 @@
             resultArea.classList.add('show');
         }
 
+        // ── Reset UI ──
         function resetUI() {
             clearInterval(timerInterval);
-            overlay.classList.remove('show');
+            countdownDisplay.classList.remove('active');
             recordBtn.disabled = false;
-            recordBtn.innerText = 'Rekam Ulang';
-            timerText.innerText = 'Merekam: 60s';
-            statusText.innerText = 'Mohon tetap di depan kamera...';
+            recordBtn.innerText = 'Mulai Sesi';
+            cdTime.innerText = '3:00';
         }
     </script>
 </body>
+
 </html>

@@ -35,6 +35,10 @@ def kuesioner_afek_negatif():
 def kuesioner_afek_positif():
     return render_template('kuesioner_SkalaAfekPositif.html')
 
+@app.route('/hasil-kuesioner', methods=['GET'])
+def hasil_kuesioner():
+    return render_template('hasil-kuesioner.html')
+
 @app.route('/analyze', methods=['POST'])
 def analyze_video():
     if 'video' not in request.files: 
@@ -54,8 +58,8 @@ def analyze_video():
     cap.release()
     os.remove(path)
 
-    # Ambil sampel ~60 frame merata
-    sampled = frames[::max(1, len(frames)//60)][:60] if frames else []
+    # Ambil sampel ~180 frame merata
+    sampled = frames[::max(1, len(frames)//180)][:180] if frames else []
     if not sampled: 
         return jsonify({'error': 'Video kosong atau gagal dibaca'}), 400
 
