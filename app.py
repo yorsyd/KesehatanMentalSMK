@@ -48,18 +48,52 @@ def analyze_video():
     path = os.path.join(tempfile.gettempdir(), 'fer_video.webm')
     request.files['video'].save(path)
     
-    # Ekstrak frame dari video
+    # Hitung total frame secara cepat (hanya grab metadata, tanpa decoding penuh)
     cap = cv2.VideoCapture(path)
-    frames = []
+    total_frames = 0
     while cap.isOpened():
-        ret, frame = cap.read()
+        ret = cap.grab()
         if not ret: break
-        frames.append(frame)
+        total_frames += 1
     cap.release()
-    os.remove(path)
+    
+    # Hitung interval sampling (target ~60 frame agar hemat CPU dan RAM di hosting)
+    target_samples = 100
+    step = max(1, total_frames // target_samples)
+    
+    # Baca ulang video untuk mengambil frame pilihan
+    cap = cv2.VideoCapture(path)
+    sampled = []
+    frame_idx = 0
+    
+    while cap.isOpened():
+        if frame_idx % step == 0 and len(sampled) < target_samples:
+            ret, frame = cap.read()
+            if not ret: break
+            
+            # Resize frame ke lebar 400px untuk menghemat RAM dan mempercepat deteksi emosi
+            h, w = frame.shape[:2]
+            target_width = 400
+            if w > target_width:
+                scale = target_width / w
+                frame_resized = cv2.resize(frame, (target_width, int(h * scale)))
+                sampled.append(frame_resized)
+            else:
+                sampled.append(frame)
+        else:
+            # Lewati frame tanpa didecode untuk menghemat CPU
+            ret = cap.grab()
+            if not ret: break
+            
+        frame_idx += 1
+        
+    cap.release()
+    
+    try:
+        os.remove(path)
+    except Exception:
+        pass
 
-    # Ambil sampel ~180 frame merata
-    sampled = frames[::max(1, len(frames)//180)][:180] if frames else []
     if not sampled: 
         return jsonify({'error': 'Video kosong atau gagal dibaca'}), 400
 

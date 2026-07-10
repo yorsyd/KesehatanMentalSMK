@@ -10,7 +10,7 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=2">
 </head>
 
 <body>
@@ -32,45 +32,49 @@
                 <section class="hero">
                     <div class="eyebrow">Platform Asesmen Kesehatan Mental Siswa SMK</div>
                     <h1>Ceritakan perasaanmu saat ini</h1>
-                    <p class="lede">Bacalah pertanyaan di bawah, renungkan sejenak, lalu klik <strong>Mulai
-                            Sesi</strong>. Sistem akan merekam reaksi ekspresi wajahmu selama 3 menit dan menganalisis
-                        emosi yang paling dominan.</p>
                 </section>
 
                 <div class="layout-single">
 
                     <!-- ── Box Pertanyaan Terbuka ── -->
                     <section class="question-panel">
-                        <div class="qp-label">Refleksi Diri &nbsp;·&nbsp; Baca &amp; Renungkan</div>
-                        <p class="qp-intro">Ceritakan kepada dirimu sendiri tentang kehidupanmu saat ini. Pikirkan
-                            jawaban dari pertanyaan-pertanyaan berikut:</p>
-                        <ul class="question-list">
-                            <li>
-                                <span class="q-num">1</span>
-                                <span>Bagaimana perasaanmu hari ini secara keseluruhan — apakah ada sesuatu yang terasa
-                                    berat atau justru menyenangkan?</span>
-                            </li>
-                            <li>
-                                <span class="q-num">2</span>
-                                <span>Adakah situasi di sekolah, rumah, atau lingkungan sosialmu yang sedang membuatmu
-                                    khawatir atau tidak nyaman belakangan ini?</span>
-                            </li>
-                            <li>
-                                <span class="q-num">3</span>
-                                <span>Kapan terakhir kali kamu merasa benar-benar bahagia dan apa yang membuatnya
-                                    terjadi?</span>
-                            </li>
-                            <li>
-                                <span class="q-num">4</span>
-                                <span>Apakah ada seseorang — teman, keluarga, atau guru — yang saat ini menjadi sumber
-                                    kekuatanmu atau justru menjadi sumber tekananmu?</span>
-                            </li>
-                            <li>
-                                <span class="q-num">5</span>
-                                <span>Jika kamu bisa mengubah satu hal dalam hidupmu sekarang, apa yang paling ingin
-                                    kamu ubah dan mengapa?</span>
-                            </li>
-                        </ul>
+                        <div class="qp-label">Petunjuk &amp; Refleksi</div>
+
+                        <div class="qp-header">
+                            <h2 class="qp-title">Halo! Mari luangkan waktu sejenak untuk berbagi cerita</h2>
+                            <p class="qp-desc">Terima kasih atas kesediaanmu berpartisipasi. Sesi ini dirancang untuk
+                                mendengarkan ceritamu dengan santai dan nyaman.</p>
+                        </div>
+
+                        <div class="qp-steps-grid">
+                            <div class="qp-step-card">
+                                <div class="qp-step-header">
+                                    <span class="qp-step-badge">1</span>
+                                    <span class="qp-step-title">Tampil Apa Adanya</span>
+                                </div>
+                                <p class="qp-step-text">Tidak perlu sungkan atau ragu. Tampilkan dirimu apa adanya karena <strong>kerahasiaan identitas dan ceritamu sepenuhnya aman &amp; dijaga</strong>.</p>
+                            </div>
+
+                            <div class="qp-step-card">
+                                <div class="qp-step-header">
+                                    <span class="qp-step-badge">2</span>
+                                    <span class="qp-step-title">Bercerita Bebas</span>
+                                </div>
+                                <p class="qp-step-text">Bagikan kisah mengenai dirimu, keseharianmu, atau pengalaman berkesan bersama keluarga dan orang-orang terdekatmu.</p>
+                            </div>
+
+                            <div class="qp-step-card">
+                                <div class="qp-step-header">
+                                    <span class="qp-step-badge">3</span>
+                                    <span class="qp-step-title">Durasi 3 Menit</span>
+                                </div>
+                                <p class="qp-step-text">Setelah siap, tekan tombol <strong>Mulai Sesi</strong> di bawah. Tataplah layar dan ceritakan perasaanmu secara bebas selama 3 menit.</p>
+                            </div>
+                        </div>
+
+                        <div class="qp-footer-note">
+                            <span>Ambil napas dalam-dalam, buat dirimu rileks. Jika belum siap, kamu tidak perlu terburu-buru memulai. Sudah siap?</span>
+                        </div>
                     </section>
 
                     <!-- ── Session Controls ── -->
