@@ -265,7 +265,6 @@
         checkbox.dataset.qnum = qNum;
 
         checkbox.addEventListener('change', function () {
-          // Enforce single selection per question
           const siblings = form.querySelectorAll('input[name="q' + qNum + '"]');
           siblings.forEach(sib => {
             if (sib !== checkbox) {
@@ -300,7 +299,9 @@
       progressText.textContent = answered + ' / ' + questions.length + ' terjawab';
     }
 
-    document.getElementById('submitBtn').addEventListener('click', function () {
+    // Menggunakan async/await untuk menangani pengiriman data HTTP POST
+    document.getElementById('submitBtn').addEventListener('click', async function () {
+      const submitBtn = this;
       const answers = {};
       let unanswered = [];
 
@@ -320,6 +321,7 @@
         return;
       }
 
+      // Hitung Skor DASS-21
       const depressionItems = [1, 2, 3, 4, 5, 6, 7];
       const anxietyItems = [8, 9, 10, 11, 12, 13, 14];
       const stressItems = [15, 16, 17, 18, 19, 20, 21];
@@ -330,25 +332,57 @@
       const anxietyScore = sumItems(anxietyItems) * 2;
       const stressScore = sumItems(stressItems) * 2;
 
-      const record = {
+      // Payload JSON yang disesuaikan dengan kebutuhan API Flask
+      const payload = {
+        kuesioner_type: 'dass21',
         label: 'kuesioner DASS-21',
-        questions: questions,
         answers: answers,
         scores: {
           depression: depressionScore,
           anxiety: anxietyScore,
           stress: stressScore
         },
-        submittedAt: new Date().toISOString()
+        total: depressionScore + anxietyScore + stressScore,
+        category: null // Dapat diisi jika ada kalkulasi kategori khusus
       };
 
-      try {
-        localStorage.setItem('dass21_result', JSON.stringify(record));
-      } catch (e) {
-        console.error('Gagal menyimpan hasil:', e);
-      }
+      // Nonaktifkan tombol saat proses pengiriman berlangsung
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Menyimpan...';
 
-      window.location.href = "{{ url_for('hasil_kuesioner') }}";
+      try {
+        // Kirim request ke backend Flask
+        const response = await fetch('/submit-kuesioner', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(payload)
+        });
+
+        const result = await response.json();
+
+        if (response.ok && result.success) {
+          // Simpan juga ke localStorage jika masih dibutuhkan oleh halaman frontend
+          localStorage.setItem('dass21_result', JSON.stringify({
+            ...payload,
+            questions: questions,
+            submittedAt: new Date().toISOString()
+          }));
+
+          // Redirect ke halaman hasil
+          window.location.href = "{{ url_for('hasil_kuesioner') }}";
+        } else {
+          alert('Gagal menyimpan hasil: ' + (result.error || 'Terjadi kesalahan.'));
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Kirim Jawaban';
+        }
+      } catch (error) {
+        console.error('Error saat submit kuesioner:', error);
+        alert('Terjadi kesalahan jaringan atau server.');
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Kirim Jawaban';
+      }
     });
   </script>
 </body>
