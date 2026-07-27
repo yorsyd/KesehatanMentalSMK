@@ -46,34 +46,27 @@
                                 mendengarkan ceritamu dengan santai dan nyaman.</p>
                         </div>
 
-                        <div class="qp-steps-grid">
-                            <div class="qp-step-card">
-                                <div class="qp-step-header">
-                                    <span class="qp-step-badge">1</span>
-                                    <span class="qp-step-title">Tampil Apa Adanya</span>
-                                </div>
-                                <p class="qp-step-text">Tidak perlu sungkan atau ragu. Tampilkan dirimu apa adanya karena <strong>kerahasiaan identitas dan ceritamu sepenuhnya aman &amp; dijaga</strong>.</p>
-                            </div>
-
-                            <div class="qp-step-card">
-                                <div class="qp-step-header">
-                                    <span class="qp-step-badge">2</span>
-                                    <span class="qp-step-title">Bercerita Bebas</span>
-                                </div>
-                                <p class="qp-step-text">Bagikan kisah mengenai dirimu, keseharianmu, atau pengalaman berkesan bersama keluarga dan orang-orang terdekatmu.</p>
-                            </div>
-
-                            <div class="qp-step-card">
-                                <div class="qp-step-header">
-                                    <span class="qp-step-badge">3</span>
-                                    <span class="qp-step-title">Durasi 3 Menit</span>
-                                </div>
-                                <p class="qp-step-text">Setelah siap, tekan tombol <strong>Mulai Sesi</strong> di bawah. Tataplah layar dan ceritakan perasaanmu secara bebas selama 3 menit.</p>
-                            </div>
-                        </div>
+                        <ol class="qp-steps-list"
+                            style="margin: 2rem 0; padding-left: 1.5rem; line-height: 1.6; color: var(--muted-alt, #555);">
+                            <li style="margin-bottom: 1.2rem; font-size: 0.95rem;">
+                                <strong>Tampil Apa Adanya</strong>: Tidak perlu sungkan atau ragu. Tampilkan dirimu apa
+                                adanya karena <strong>kerahasiaan identitas dan ceritamu sepenuhnya aman &amp;
+                                    dijaga</strong>.
+                            </li>
+                            <li style="margin-bottom: 1.2rem; font-size: 0.95rem;">
+                                <strong>Bercerita Bebas</strong>: Ceritakan pengalamanmu yang dianggap positif, negatif
+                                baik pengalaman masa lalu, sekarang atau yang akan datang.
+                            </li>
+                            <li style="margin-bottom: 1.2rem; font-size: 0.95rem;">
+                                <strong>Durasi 3 Menit</strong>: Setelah siap, tekan tombol <strong>Mulai Sesi</strong>
+                                di
+                                bawah. Tataplah layar dan ceritakan perasaanmu secara bebas selama 3 menit.
+                            </li>
+                        </ol>
 
                         <div class="qp-footer-note">
-                            <span>Ambil napas dalam-dalam, buat dirimu rileks. Jika belum siap, kamu tidak perlu terburu-buru memulai. Sudah siap?</span>
+                            <span>Ambil napas dalam-dalam, buat dirimu rileks. Jika belum siap, kamu tidak perlu
+                                terburu-buru memulai. Sudah siap?</span>
                         </div>
                     </section>
 
@@ -83,19 +76,15 @@
                         <button id="clearBtn" class="btn btn-secondary" type="button">Batalkan</button>
                         <div id="countdownDisplay" class="countdown-display">
                             <span class="cd-dot"></span>
-                            <span id="cdTime" class="cd-time">3:00</span>
+                            <span id="cdTime" class="cd-time">2:00</span>
                             <span class="cd-label">sesi berlangsung</span>
                         </div>
                     </div>
 
-                    <!-- ── Hasil Analisis ── -->
-                    <section id="resultArea" class="panel result-card">
-                        <h2>Hasil Analisis</h2>
-                        <div class="dominant-box">
-                            <div class="dominant-label">Emosi Paling Dominan</div>
-                            <p id="dominantEmotion"></p>
-                        </div>
-                        <div id="emotionBars"></div>
+                    <!-- ── Pesan Konfirmasi (Menggantikan Tampilan Hasil Analisis) ── -->
+                    <section id="resultArea" class="panel result-card" style="display: none;">
+                        <h2 style="margin-top:0;">Sesi Selesai</h2>
+                        <p>Terima kasih telah berbagi cerita. Data responismu telah berhasil dikirim dan tersimpan dengan aman.</p>
                     </section>
 
                 </div><!-- /.layout-single -->
@@ -111,8 +100,6 @@
         const countdownDisplay = document.getElementById('countdownDisplay');
         const cdTime = document.getElementById('cdTime');
         const resultArea = document.getElementById('resultArea');
-        const dominantEmotion = document.getElementById('dominantEmotion');
-        const emotionBars = document.getElementById('emotionBars');
 
         let mediaRecorder;
         let recordedChunks = [];
@@ -147,11 +134,11 @@
 
             recordBtn.disabled = true;
             recordBtn.innerText = 'Sesi Berlangsung...';
-            resultArea.classList.remove('show');
+            resultArea.style.display = 'none';
 
             countdownDisplay.classList.add('active');
 
-            let timeLeft = 120;
+            let timeLeft = 120; 
             cdTime.innerText = formatTime(timeLeft);
             clearInterval(timerInterval);
 
@@ -170,24 +157,21 @@
 
         clearBtn.addEventListener('click', cancelSession);
 
-        // ── Cancel session: stop recorder without sending, then re-init ──
+        // ── Cancel session ──
         function cancelSession() {
             clearInterval(timerInterval);
 
             if (mediaRecorder && mediaRecorder.state === 'recording') {
-                // Detach the onstop handler so it does NOT send data to server
                 mediaRecorder.onstop = null;
                 mediaRecorder.stop();
             }
 
             recordedChunks = [];
             resetUI();
-
-            // Re-create MediaRecorder so it can be started again
             createRecorder();
         }
 
-        // ── Create a fresh MediaRecorder from the existing stream ──
+        // ── Create a fresh MediaRecorder ──
         function createRecorder() {
             if (!stream) return;
 
@@ -226,50 +210,14 @@
                     return;
                 }
 
-                displayResults(data);
+                // Tampilkan konfirmasi sukses tanpa menampilkan detail emosi
+                resultArea.style.display = 'block';
+
             } catch (err) {
                 alert('Gagal menghubungi server.');
             }
 
             resetUI();
-        }
-
-        // ── Terjemahan label emosi ──
-        const emosiLabel = {
-            angry: 'Marah',
-            disgust: 'Jijik',
-            fear: 'Takut',
-            happy: 'Senang',
-            sad: 'Sedih',
-            surprise: 'Terkejut',
-            neutral: 'Netral'
-        };
-
-        // ── Display results ──
-        function displayResults(data) {
-            const dominanLabel = emosiLabel[data.dominant] || data.dominant;
-            dominantEmotion.innerText = `${dominanLabel} (${data.percentages[data.dominant]}%)`;
-            emotionBars.innerHTML = '';
-
-            const sortedEmotions = Object.entries(data.percentages).sort((a, b) => b[1] - a[1]);
-
-            sortedEmotions.forEach(([emo, percentage]) => {
-                const label = emosiLabel[emo] || emo;
-                const barHtml = `
-                    <div class="emotion-row">
-                        <div class="meta">
-                            <span>${label}</span>
-                            <span>${percentage}%</span>
-                        </div>
-                        <div class="bar-track">
-                            <div class="bar-fill" style="width: ${percentage}%"></div>
-                        </div>
-                    </div>
-                `;
-                emotionBars.innerHTML += barHtml;
-            });
-
-            resultArea.classList.add('show');
         }
 
         // ── Reset UI ──

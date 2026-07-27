@@ -187,7 +187,37 @@ def kuesioner_afek_positif():
 @app.route('/hasil-kuesioner')
 @siswa_required
 def hasil_kuesioner():
-    return render_template('hasil-kuesioner.html')
+    siswa_id = session['siswa_id']
+    conn = get_db_connection()
+    
+    # Ambil hasil kuesioner terbaru milik siswa yang sedang login
+    # Mengambil record paling akhir untuk masing-masing kuesioner_type
+    rows = conn.execute("""
+        SELECT h1.* FROM hasil_kuesioner h1
+        INNER JOIN (
+            SELECT kuesioner_type, MAX(id) as max_id
+            FROM hasil_kuesioner
+            WHERE siswa_id = ?
+            GROUP BY kuesioner_type
+        ) h2 ON h1.id = h2.max_id
+    """, (siswa_id,)).fetchall()
+    conn.close()
+
+    # Format data DB ke dictionary agar mudah diproses di Jinja / JS
+    kuesioner_db = {}
+    for row in rows:
+        kuesioner_db[row['kuesioner_type']] = {
+            'id': row['id'],
+            'kuesioner_type': row['kuesioner_type'],
+            'label': row['label'],
+            'scores': json.loads(row['scores']) if row['scores'] else {},
+            'answers': json.loads(row['answers']) if row['answers'] else {},
+            'total': row['total'],
+            'category': row['category'],
+            'submitted_at': row['created_at'] if 'created_at' in row.keys() else row.get('submitted_at', '')
+        }
+
+    return render_template('hasil-kuesioner.html', kuesioner_db=kuesioner_db)
 
 
 # ── API: Submit Hasil Kuesioner ────────────────────────────────────────────────

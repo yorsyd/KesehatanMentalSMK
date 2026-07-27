@@ -82,7 +82,7 @@
       position: relative;
       z-index: 1;
       width: 100%;
-      max-width: 900px;
+      max-width: 600px;
       background: var(--panel);
       border: 1px solid var(--border);
       border-radius: 24px;
@@ -227,6 +227,7 @@
     .btn-teal {
       background: var(--teal);
       color: #fff;
+      margin-bottom: 10px;
     }
     .btn-teal:hover {
       background: #0a9ea0;
@@ -322,9 +323,6 @@
       {% endif %}
     {% endwith %}
 
-    <!-- Mode Grid: Siswa | Admin -->
-    <div class="mode-grid">
-
       <!-- Panel Kiri: Siswa -->
       <div class="mode-panel">
         <div class="mode-pill siswa">
@@ -334,7 +332,7 @@
           </svg>
           Siswa
         </div>
-        <h2 class="mode-title">Mulai<br>Asesmen Anda</h2>
+        <h2 class="mode-title">Mulai Asesmen Anda</h2>
         <p class="mode-desc">Isi data diri untuk membuka sesi asesmen. Setiap sesi adalah privat dan terpisah.</p>
 
         <form action="{{ url_for('siswa_register') }}" method="POST">
@@ -371,55 +369,12 @@
             Mulai Asesmen
           </button>
         </form>
+        <p class="mode-desc" style="text-align: center;">Anda Admin? <a href="{{ url_for('admin_login') }}" style="color: var(--teal);">Klik di Sini</a></p>
       </div>
-
-      <!-- Panel Kanan: Admin -->
-      <div class="mode-panel">
-        <div class="mode-pill admin">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-          </svg>
-          Guru / Admin
-        </div>
-        <h2 class="mode-title">Akses<br>Dashboard Admin</h2>
-        <p class="mode-desc">Login dengan kredensial admin untuk melihat data asesmen seluruh siswa.</p>
-
-        <form action="{{ url_for('admin_login') }}" method="POST">
-          <div class="form-group">
-            <label for="username">Username</label>
-            <input type="text" id="username" name="username" placeholder="Username admin" required autocomplete="username">
-          </div>
-          <div class="form-group">
-            <label for="password">Password</label>
-            <input type="password" id="password" name="password" placeholder="••••••••" required autocomplete="current-password">
-          </div>
-          <button type="submit" class="btn btn-amber">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-              <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
-              <polyline points="10 17 15 12 10 7"/>
-              <line x1="15" y1="12" x2="3" y2="12"/>
-            </svg>
-            Masuk sebagai Admin
-          </button>
-        </form>
-
-        <!-- Info hint -->
-        <div style="margin-top: 20px; padding: 12px; background: var(--amber-soft); border: 1px solid rgba(245,158,11,0.2); border-radius: 10px;">
-          <p style="font-size: 0.78rem; color: #fcd34d; line-height: 1.5;">
-            <strong>Default admin:</strong><br>
-            Username: <code style="background: rgba(255,255,255,0.08); padding: 1px 6px; border-radius: 4px;">admin</code>
-            &nbsp;|&nbsp;
-            Password: <code style="background: rgba(255,255,255,0.08); padding: 1px 6px; border-radius: 4px;">admin123</code>
-          </p>
-        </div>
-      </div>
-
-    </div>
 
     <!-- Footer -->
     <div class="portal-footer">
-      <p>© 2025 Platform Asesmen Kesehatan Mental SMK</p>
+      <p>© 2026 Platform Asesmen Kesehatan Mental SMK</p>
       <div class="status-dot">Server aktif</div>
     </div>
 
