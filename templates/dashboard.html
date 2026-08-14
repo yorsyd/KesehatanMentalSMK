@@ -1,0 +1,1034 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard Admin — Asesmen Kesehatan Mental SMK</title>
+  <meta name="description" content="Dashboard admin untuk melihat dan menganalisis data asesmen psikologis seluruh siswa SMK.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+  <style>
+    /* ── Dashboard-specific overrides ──────────────────────────────────── */
+    body { background: var(--bg); }
+
+    /* Header */
+    .dash-header {
+      background: var(--panel);
+      border-bottom: 1px solid var(--line);
+      padding: 18px 0;
+      position: sticky; top: 0; z-index: 100;
+    }
+    .dash-header .wrap {
+      display: flex; align-items: center;
+      justify-content: space-between; gap: 16px;
+    }
+    .dash-brand {
+      display: flex; align-items: center; gap: 10px;
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 700; font-size: 1rem;
+      color: var(--ink); text-decoration: none;
+    }
+    .dash-brand .dot {
+      width: 9px; height: 9px; border-radius: 50%;
+      background: var(--teal); box-shadow: 0 0 0 3px var(--teal-soft);
+    }
+    .dash-meta {
+      display: flex; align-items: center; gap: 12px;
+    }
+    .admin-badge {
+      display: flex; align-items: center; gap: 8px;
+      padding: 6px 12px; border-radius: 999px;
+      background: var(--surface); border: 1px solid var(--line);
+      font-size: 0.8rem; color: var(--muted-alt);
+    }
+    .admin-badge .av {
+      width: 24px; height: 24px; border-radius: 50%;
+      background: var(--teal); color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.7rem; font-weight: 700;
+      font-family: 'Space Grotesk', sans-serif;
+    }
+    .logout-btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 7px 14px; border-radius: 999px;
+      border: 1px solid var(--line); background: none;
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-size: 0.8rem; font-weight: 500;
+      color: var(--danger); cursor: pointer;
+      text-decoration: none;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .logout-btn:hover { background: #fef2f4; border-color: var(--danger); }
+    .logout-btn svg { width: 13px; height: 13px; }
+
+    /* Page */
+    .dash-page { padding: 32px 0 80px; }
+
+    /* Stats row */
+    .stats-row {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 14px; margin-bottom: 28px;
+    }
+    .stat-card {
+      background: var(--panel); border: 1px solid var(--line);
+      border-radius: 14px; padding: 20px 22px;
+    }
+    .stat-label {
+      font-size: 0.75rem; font-weight: 600; letter-spacing: 0.06em;
+      text-transform: uppercase; color: var(--muted); margin-bottom: 8px;
+    }
+    .stat-value {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 1.9rem; font-weight: 700; color: var(--ink); line-height: 1;
+    }
+    .stat-sub { font-size: 0.8rem; color: var(--muted); margin-top: 4px; }
+
+    /* Controls */
+    .controls {
+      display: flex; gap: 12px; align-items: center;
+      flex-wrap: wrap; margin-bottom: 20px;
+    }
+    .search-wrap {
+      position: relative; flex: 1; min-width: 220px;
+    }
+    .search-icon {
+      position: absolute; left: 13px; top: 50%; transform: translateY(-50%);
+      color: var(--muted); pointer-events: none;
+    }
+    .search-icon svg { width: 15px; height: 15px; }
+    .search-input {
+      width: 100%; padding: 10px 14px 10px 38px;
+      background: var(--panel); border: 1px solid var(--line);
+      border-radius: 10px; color: var(--ink);
+      font-family: 'IBM Plex Sans', sans-serif; font-size: 0.88rem;
+      outline: none; transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .search-input:focus {
+      border-color: var(--teal);
+      box-shadow: 0 0 0 3px rgba(15,139,141,0.15);
+    }
+    .filter-select {
+      padding: 10px 36px 10px 14px;
+      background: var(--panel); border: 1px solid var(--line);
+      border-radius: 10px; color: var(--ink);
+      font-family: 'IBM Plex Sans', sans-serif; font-size: 0.88rem;
+      outline: none; cursor: pointer; appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 10px center;
+      background-size: 14px;
+      transition: border-color 0.2s;
+    }
+    .filter-select:focus { border-color: var(--teal); outline: none; }
+
+    /* Table */
+    .table-wrap {
+      background: var(--panel); border: 1px solid var(--line);
+      border-radius: 16px; overflow: hidden;
+    }
+    table { width: 100%; border-collapse: collapse; }
+    thead th {
+      padding: 13px 16px; text-align: left;
+      font-size: 0.72rem; font-weight: 600; letter-spacing: 0.06em;
+      text-transform: uppercase; color: var(--muted);
+      background: var(--surface); border-bottom: 1px solid var(--line);
+      white-space: nowrap;
+    }
+    tbody tr {
+      border-bottom: 1px solid var(--line-soft);
+      transition: background 0.12s;
+    }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: var(--surface); }
+    td {
+      padding: 14px 16px; font-size: 0.875rem;
+      color: var(--ink); vertical-align: middle;
+    }
+    td .name { font-weight: 600; margin-bottom: 2px; }
+    td .sub  { font-size: 0.78rem; color: var(--muted); }
+
+    /* Badges */
+    .badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 3px 10px; border-radius: 999px;
+      font-size: 0.73rem; font-weight: 600;
+      white-space: nowrap;
+    }
+    .badge-yes  { background: var(--teal-soft);   color: var(--teal-dark); border: 1px solid rgba(15,139,141,.2); }
+    .badge-no   { background: var(--surface);       color: var(--muted);     border: 1px solid var(--line); }
+    .badge-amber{ background: var(--amber-soft);   color: var(--amber-dark); border: 1px solid rgba(184,135,58,.2); }
+    .badge-dot { width: 5px; height: 5px; border-radius: 50%; }
+    .dot-yes  { background: var(--teal); }
+    .dot-no   { background: #d1d5db; }
+    .dot-amber{ background: var(--amber); }
+
+    /* Action buttons */
+    .action-group { display: flex; gap: 8px; align-items: center; }
+    .btn-detail {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 6px 12px; border-radius: 8px;
+      background: var(--teal-soft); color: var(--teal-dark);
+      border: 1px solid rgba(15,139,141,.25);
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-size: 0.78rem; font-weight: 600;
+      cursor: pointer; transition: all 0.15s;
+    }
+    .btn-detail:hover { background: var(--teal); color: #fff; }
+    .btn-delete {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 6px 10px; border-radius: 8px;
+      background: none; color: var(--danger);
+      border: 1px solid rgba(244,63,94,.2);
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-size: 0.78rem; font-weight: 500;
+      cursor: pointer; transition: all 0.15s;
+    }
+    .btn-delete:hover { background: #fef2f4; border-color: var(--danger); }
+    .btn-detail svg, .btn-delete svg { width: 12px; height: 12px; }
+
+    /* Empty state */
+    .empty-state {
+      text-align: center; padding: 60px 24px;
+      color: var(--muted);
+    }
+    .empty-state svg { width: 40px; height: 40px; opacity: 0.35; margin-bottom: 14px; }
+    .empty-state p { font-size: 0.9rem; }
+
+    /* ── MODAL ──────────────────────────────────────────────────────────── */
+    .modal-overlay {
+      position: fixed; inset: 0;
+      background: var(--overlay-bg);
+      display: none; align-items: center; justify-content: center;
+      z-index: 1000; padding: 20px;
+      backdrop-filter: blur(3px);
+      animation: fadeIn 0.2s ease;
+    }
+    .modal-overlay.active { display: flex; }
+
+    .modal {
+      background: var(--panel); border-radius: 20px;
+      border: 1px solid var(--line);
+      width: 100%; max-width: 800px;
+      max-height: 90vh; display: flex; flex-direction: column;
+      box-shadow: 0 24px 60px rgba(22,35,47,.18);
+      animation: slideUp 0.25s ease;
+    }
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .modal-header {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 16px; padding: 20px 24px;
+      border-bottom: 1px solid var(--line);
+    }
+    .modal-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 1.05rem; font-weight: 700;
+      color: var(--ink); margin: 0; flex: 1;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .modal-close {
+      width: 32px; height: 32px; border-radius: 50%;
+      border: 1px solid var(--line); background: none;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; color: var(--muted); flex-shrink: 0;
+      transition: background 0.15s, color 0.15s;
+    }
+    .modal-close:hover { background: var(--surface); color: var(--ink); }
+    .modal-close svg { width: 14px; height: 14px; }
+
+    /* Profile strip */
+    .profile-strip {
+      padding: 16px 24px;
+      background: var(--surface); border-bottom: 1px solid var(--line);
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;
+    }
+    .pf-item .pf-label {
+      font-size: 0.7rem; font-weight: 600; letter-spacing: 0.06em;
+      text-transform: uppercase; color: var(--muted); margin-bottom: 4px;
+    }
+    .pf-item .pf-val {
+      font-size: 0.88rem; font-weight: 600; color: var(--ink);
+    }
+
+    /* Tabs */
+    .modal-tabs {
+      display: flex; gap: 0;
+      border-bottom: 1px solid var(--line);
+      padding: 0 24px;
+    }
+    .tab-btn {
+      display: inline-flex; align-items: center; gap: 7px;
+      padding: 13px 16px; border: none; background: none;
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-size: 0.85rem; font-weight: 500;
+      color: var(--muted); cursor: pointer;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -1px; transition: color 0.15s;
+    }
+    .tab-btn.active { color: var(--teal); border-bottom-color: var(--teal); }
+    .tab-btn svg { width: 14px; height: 14px; }
+
+    /* Tab panes */
+    .modal-body { flex: 1; overflow-y: auto; }
+    .tab-pane { display: none; padding: 20px 24px; }
+    .tab-pane.active { display: block; }
+
+    /* Loading spinner */
+    .loading-state {
+      display: flex; align-items: center; justify-content: center;
+      gap: 10px; padding: 40px; color: var(--muted); font-size: 0.88rem;
+    }
+    .spinner {
+      width: 18px; height: 18px; border: 2px solid var(--line);
+      border-top-color: var(--teal); border-radius: 50%;
+      animation: spin 0.7s linear infinite; flex-shrink: 0;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Kuesioner cards */
+    .kuesioner-card {
+      background: var(--surface); border: 1px solid var(--line);
+      border-radius: 12px; padding: 18px; margin-bottom: 14px;
+    }
+    .kuesioner-card:last-child { margin-bottom: 0; }
+    .kc-head {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 12px; margin-bottom: 14px;
+    }
+    .kc-type {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase;
+      color: var(--teal); background: var(--teal-soft);
+      padding: 3px 9px; border-radius: 6px;
+    }
+    .kc-date { font-size: 0.75rem; color: var(--muted); }
+    .kc-label {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 1rem; font-weight: 700; color: var(--ink); margin-bottom: 12px;
+    }
+
+    /* Score cards grid */
+    .score-cards-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+    }
+    .score-detail-card {
+      background: var(--panel); border: 1px solid var(--line);
+      border-radius: 10px; padding: 14px; text-align: center;
+    }
+    .score-detail-card h4 {
+      font-size: 0.75rem; font-weight: 600; color: var(--muted);
+      margin: 0 0 6px; text-transform: uppercase; letter-spacing: 0.05em;
+    }
+    .score-num {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 1.6rem; font-weight: 700; color: var(--ink); line-height: 1;
+      margin-bottom: 6px;
+    }
+
+    /* Severity badges */
+    .severity-badge {
+      display: inline-block; padding: 3px 10px; border-radius: 999px;
+      font-size: 0.72rem; font-weight: 600;
+    }
+    .sev-normal        { background: #d1fae5; color: #065f46; }
+    .sev-ringan        { background: #fef3c7; color: #92400e; }
+    .sev-sedang        { background: #fed7aa; color: #9a3412; }
+    .sev-parah         { background: #fde8ec; color: #9f1239; }
+    .sev-sangat-parah  { background: #fce7f3; color: #831843; }
+    .sev-sangat-rendah { background: #dbeafe; color: #1e40af; }
+    .sev-rendah        { background: #d1fae5; color: #065f46; }
+    .sev-tinggi        { background: #fde8ec; color: #9f1239; }
+    .sev-sangat-tinggi { background: #fce7f3; color: #831843; }
+
+    /* Deteksi emosi */
+    .deteksi-card {
+      background: var(--surface); border: 1px solid var(--line);
+      border-radius: 12px; padding: 18px; margin-bottom: 14px;
+    }
+    .deteksi-card:last-child { margin-bottom: 0; }
+    .dc-head {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 12px; margin-bottom: 14px;
+    }
+    .dc-dominant {
+      font-family: 'Space Grotesk', sans-serif; font-weight: 700;
+      font-size: 0.95rem; color: var(--ink);
+      display: flex; align-items: center; gap: 8px;
+    }
+    .dc-dominant-icon {
+      width: 32px; height: 32px; border-radius: 8px;
+      background: var(--amber-soft); color: var(--amber);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .dc-dominant-icon svg { width: 16px; height: 16px; }
+
+    /* Emotion bars */
+    .emotion-bars { display: grid; gap: 10px; margin-bottom: 14px; }
+    .emo-row {}
+    .emo-meta {
+      display: flex; justify-content: space-between;
+      font-size: 0.8rem; margin-bottom: 4px;
+    }
+    .emo-name { font-weight: 600; text-transform: capitalize; color: var(--ink); }
+    .emo-pct  { color: var(--muted); font-family: 'IBM Plex Mono', monospace; }
+
+    /* Video player */
+    .video-player-wrap {
+      background: var(--ink); border-radius: 10px; overflow: hidden;
+      border: 1px solid var(--line); margin-top: 12px;
+    }
+    .video-player-wrap video {
+      width: 100%; max-height: 200px; object-fit: contain; display: block;
+    }
+
+    /* Empty pane */
+    .pane-empty {
+      text-align: center; padding: 40px 20px;
+      color: var(--muted); font-size: 0.88rem;
+    }
+    .pane-empty svg {
+      width: 36px; height: 36px; opacity: 0.3; margin-bottom: 10px; display: block; margin: 0 auto 10px;
+    }
+
+    @media (max-width: 700px) {
+      .stats-row { grid-template-columns: 1fr; }
+      .profile-strip { grid-template-columns: 1fr 1fr; }
+      .score-cards-grid { grid-template-columns: 1fr; }
+      .modal { max-height: 95vh; }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- ── Header ──────────────────────────────────────────────────────────── -->
+  <header class="dash-header">
+    <div class="wrap">
+      <a href="{{ url_for('admin_dashboard') }}" class="dash-brand">
+        <span class="dot"></span> Asesmen&nbsp;Terpadu
+      </a>
+      <div class="dash-meta">
+        <div class="admin-badge">
+          <div class="av">{{ session.get('admin_username', 'A')[0].upper() }}</div>
+          {{ session.get('admin_username', 'Admin') }}
+        </div>
+        <a href="{{ url_for('logout') }}" class="logout-btn" id="logoutBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+            <polyline points="16 17 21 12 16 7"/>
+            <line x1="21" y1="12" x2="9" y2="12"/>
+          </svg>
+          Logout
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- ── Main Page ──────────────────────────────────────────────────────── -->
+  <main class="dash-page">
+    <div class="wrap">
+
+      <!-- Page title -->
+      <div style="margin-bottom: 24px;">
+        <div class="eyebrow">Admin Dashboard</div>
+        <h1 style="font-size: 1.9rem; margin-bottom: 6px;">Data Asesmen Siswa</h1>
+        <p class="lede" style="font-size: 0.9rem;">
+          Kelola dan pantau hasil asesmen psikologis seluruh siswa yang terdaftar.
+        </p>
+      </div>
+
+      <!-- Stats row -->
+      <div class="stats-row">
+        <div class="stat-card">
+          <div class="stat-label">Total Siswa</div>
+          <div class="stat-value" id="statTotal">{{ students|length }}</div>
+          <div class="stat-sub">terdaftar dalam sistem</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Ada Data Kuesioner</div>
+          <div class="stat-value" id="statKuesioner">
+            {{ students | selectattr('count_kuesioner', 'greaterthan', 0) | list | length }}
+          </div>
+          <div class="stat-sub">siswa telah mengisi kuesioner</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Ada Data Deteksi</div>
+          <div class="stat-value" id="statDeteksi">
+            {{ students | selectattr('count_deteksi', 'greaterthan', 0) | list | length }}
+          </div>
+          <div class="stat-sub">siswa telah rekam emosi</div>
+        </div>
+      </div>
+
+      <!-- Controls: search + filter -->
+      <form method="GET" action="{{ url_for('admin_dashboard') }}" id="filterForm">
+        <div class="controls">
+          <div class="search-wrap">
+            <span class="search-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <circle cx="11" cy="11" r="8"/>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+              </svg>
+            </span>
+            <input type="text" name="search" id="searchInput" class="search-input"
+                   placeholder="Cari nama, kelas, jurusan, sekolah..."
+                   value="{{ search }}"
+                   autocomplete="off">
+          </div>
+          <select name="filter" id="filterSelect" class="filter-select"
+                  onchange="document.getElementById('filterForm').submit()">
+            <option value="semua"    {% if status_filter == 'semua'    %}selected{% endif %}>Semua Siswa</option>
+            <option value="kuesioner"{% if status_filter == 'kuesioner'%}selected{% endif %}>Punya Data Kuesioner</option>
+            <option value="deteksi"  {% if status_filter == 'deteksi'  %}selected{% endif %}>Punya Data Deteksi</option>
+            <option value="kedua"    {% if status_filter == 'kedua'    %}selected{% endif %}>Punya Kedua Data</option>
+          </select>
+          <button type="submit" class="btn btn-primary" style="border-radius: 10px; padding: 10px 18px; font-size: 0.88rem;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14">
+              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+            Cari
+          </button>
+        </div>
+      </form>
+
+      <!-- Table -->
+      <div class="table-wrap">
+        {% if students %}
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 44px;">#</th>
+              <th>Siswa</th>
+              <th>Sekolah</th>
+              <th>Kuesioner</th>
+              <th>Deteksi Emosi</th>
+              <th>Didaftar</th>
+              <th style="width: 140px;">Aksi</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for s in students %}
+            <tr>
+              <td style="color: var(--muted); font-family: 'IBM Plex Mono', monospace; font-size: 0.78rem;">
+                {{ loop.index }}
+              </td>
+              <td>
+                <div class="name">{{ s.nama }}</div>
+                <div class="sub">{{ s.kelas }} &middot; {{ s.jurusan }}</div>
+              </td>
+              <td>
+                <div style="font-size: 0.85rem;">{{ s.sekolah }}</div>
+              </td>
+              <td>
+                {% if s.count_kuesioner > 0 %}
+                  <span class="badge badge-yes">
+                    <span class="badge-dot dot-yes"></span>
+                    {{ s.count_kuesioner }} pengisian
+                  </span>
+                {% else %}
+                  <span class="badge badge-no">
+                    <span class="badge-dot dot-no"></span>
+                    Belum ada
+                  </span>
+                {% endif %}
+              </td>
+              <td>
+                {% if s.count_deteksi > 0 %}
+                  <span class="badge badge-amber">
+                    <span class="badge-dot dot-amber"></span>
+                    {{ s.count_deteksi }} rekaman
+                  </span>
+                {% else %}
+                  <span class="badge badge-no">
+                    <span class="badge-dot dot-no"></span>
+                    Belum ada
+                  </span>
+                {% endif %}
+              </td>
+              <td style="font-size: 0.78rem; color: var(--muted); font-family: 'IBM Plex Mono', monospace; white-space: nowrap;">
+                {{ s.created_at[:10] if s.created_at else '-' }}
+              </td>
+              <td>
+                <div class="action-group">
+                  <button class="btn-detail" onclick="openStudentDetail({{ s.id }})" id="detailBtn-{{ s.id }}">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                      <circle cx="12" cy="12" r="3"/>
+                    </svg>
+                    Detail
+                  </button>
+                  <button class="btn-delete" onclick="deleteStudent({{ s.id }}, '{{ s.nama }}')" id="deleteBtn-{{ s.id }}">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                      <polyline points="3 6 5 6 21 6"/>
+                      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                      <path d="M10 11v6M14 11v6"/>
+                    </svg>
+                  </button>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% else %}
+        <div class="empty-state">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+            <circle cx="9" cy="7" r="4"/>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+          </svg>
+          <p>
+            {% if search %}
+              Tidak ada siswa yang cocok dengan pencarian "<strong>{{ search }}</strong>".
+            {% else %}
+              Belum ada data siswa yang terdaftar.
+            {% endif %}
+          </p>
+        </div>
+        {% endif %}
+      </div>
+
+    </div><!-- /wrap -->
+  </main>
+
+  <!-- ── MODAL DETAIL ──────────────────────────────────────────────────── -->
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal" id="detailModal">
+
+      <div class="modal-header">
+        <h2 class="modal-title" id="modalStudentName">Detail Asesmen</h2>
+        <button class="modal-close" onclick="closeModal()" id="modalCloseBtn" aria-label="Tutup modal">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Profile strip -->
+      <div class="profile-strip">
+        <div class="pf-item">
+          <div class="pf-label">Nama</div>
+          <div class="pf-val" id="pName">—</div>
+        </div>
+        <div class="pf-item">
+          <div class="pf-label">Kelas / Jurusan</div>
+          <div class="pf-val" id="pClassMajor">—</div>
+        </div>
+        <div class="pf-item">
+          <div class="pf-label">Sekolah</div>
+          <div class="pf-val" id="pSchool">—</div>
+        </div>
+        <div class="pf-item">
+          <div class="pf-label">Terdaftar</div>
+          <div class="pf-val" id="pDate">—</div>
+        </div>
+      </div>
+
+      <!-- Tabs -->
+      <div class="modal-tabs">
+        <button class="tab-btn active" id="tabBtnKuesioner" onclick="switchTab('kuesioner')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 11l3 3L22 4"/>
+            <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+          </svg>
+          Kuesioner
+        </button>
+        <button class="tab-btn" id="tabBtnDeteksi" onclick="switchTab('deteksi')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+            <circle cx="12" cy="12" r="3"/>
+          </svg>
+          Deteksi Emosi
+        </button>
+      </div>
+
+      <!-- Tab panes -->
+      <div class="modal-body">
+        <!-- Kuesioner pane -->
+        <div class="tab-pane active" id="paneKuesioner">
+          <div class="loading-state" id="kuesionerLoading">
+            <div class="spinner"></div> Memuat data kuesioner...
+          </div>
+          <div id="kuesionerContent" style="display:none;"></div>
+        </div>
+
+        <!-- Deteksi pane -->
+        <div class="tab-pane" id="paneDeteksi">
+          <div class="loading-state" id="deteksiLoading">
+            <div class="spinner"></div> Memuat data deteksi emosi...
+          </div>
+          <div id="deteksiContent" style="display:none;"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── Footer ─────────────────────────────────────────────────────────── -->
+  <footer>
+    <div class="wrap">
+      <span>© 2025 Platform Asesmen Kesehatan Mental SMK</span>
+      <span>Admin: {{ session.get('admin_username', '') }}</span>
+    </div>
+  </footer>
+
+
+  <script>
+    // ── State ───────────────────────────────────────────────────────────────
+    let currentStudentData = null;
+    let activeTab = 'kuesioner';
+    const modal = document.getElementById('modalOverlay');
+
+    // ── Klasifikasi DASS-21 ─────────────────────────────────────────────────
+    function classifyDass(subscale, score) {
+      const thresholds = {
+        depression: [
+          { max:  9, label: 'Normal',       cls: 'sev-normal' },
+          { max: 13, label: 'Ringan',        cls: 'sev-ringan' },
+          { max: 20, label: 'Sedang',        cls: 'sev-sedang' },
+          { max: 27, label: 'Parah',         cls: 'sev-parah'  },
+          { max: Infinity, label: 'Sangat Parah', cls: 'sev-sangat-parah' }
+        ],
+        anxiety: [
+          { max:  7, label: 'Normal',       cls: 'sev-normal' },
+          { max:  9, label: 'Ringan',        cls: 'sev-ringan' },
+          { max: 14, label: 'Sedang',        cls: 'sev-sedang' },
+          { max: 19, label: 'Parah',         cls: 'sev-parah'  },
+          { max: Infinity, label: 'Sangat Parah', cls: 'sev-sangat-parah' }
+        ],
+        stress: [
+          { max: 14, label: 'Normal',       cls: 'sev-normal' },
+          { max: 18, label: 'Ringan',        cls: 'sev-ringan' },
+          { max: 25, label: 'Sedang',        cls: 'sev-sedang' },
+          { max: 33, label: 'Parah',         cls: 'sev-parah'  },
+          { max: Infinity, label: 'Sangat Parah', cls: 'sev-sangat-parah' }
+        ]
+      };
+      const list = thresholds[subscale] || [];
+      return list.find(t => score <= t.max) || { label: '-', cls: 'sev-sedang' };
+    }
+
+    function affectSevClass(category) {
+      const map = {
+        'Sangat Rendah': 'sev-sangat-rendah',
+        'Rendah':        'sev-rendah',
+        'Sedang':        'sev-sedang',
+        'Tinggi':        'sev-tinggi',
+        'Sangat Tinggi': 'sev-sangat-tinggi'
+      };
+      return map[category] || 'sev-sedang';
+    }
+
+    // ── Label terjemahan emosi ──────────────────────────────────────────────
+    const emosiLabel = {
+      angry: 'Marah', disgust: 'Jijik', fear: 'Takut',
+      happy: 'Senang', sad: 'Sedih', surprise: 'Terkejut', neutral: 'Netral'
+    };
+
+    // ── Buka detail siswa ───────────────────────────────────────────────────
+    function openStudentDetail(siswaId) {
+      // Reset UI ke state loading
+      document.getElementById('modalStudentName').innerText = 'Memuat...';
+      ['pName', 'pSchool', 'pClassMajor', 'pDate'].forEach(id => {
+        document.getElementById(id).innerText = '—';
+      });
+      document.getElementById('kuesionerLoading').style.display = 'flex';
+      document.getElementById('kuesionerContent').style.display  = 'none';
+      document.getElementById('deteksiLoading').style.display    = 'flex';
+      document.getElementById('deteksiContent').style.display    = 'none';
+      document.getElementById('kuesionerContent').innerHTML = '';
+      document.getElementById('deteksiContent').innerHTML   = '';
+
+      // Stop video jika ada yang sedang diputar
+      document.querySelectorAll('#deteksiContent video').forEach(v => {
+        v.pause(); v.src = '';
+      });
+
+      modal.classList.add('active');
+      switchTab('kuesioner');
+
+      // Fetch data dari server
+      fetch(`/admin/siswa-detail/${siswaId}`)
+        .then(response => {
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          return response.json();
+        })
+        .then(data => {
+          try {
+            if (data.error) {
+              alert(data.error);
+              closeModal();
+              return;
+            }
+
+            currentStudentData = data;
+
+            // Populate profil
+            const s = data.siswa || {};
+            document.getElementById('modalStudentName').innerText =
+              'Detail Asesmen: ' + (s.nama ?? '-');
+            document.getElementById('pName').innerText       = s.nama   ?? '-';
+            document.getElementById('pSchool').innerText     = s.sekolah ?? '-';
+            document.getElementById('pClassMajor').innerText =
+              `${s.kelas ?? '-'} / ${s.jurusan ?? '-'}`;
+
+            const regDate = s.created_at ? new Date(s.created_at) : null;
+            document.getElementById('pDate').innerText = (regDate && !isNaN(regDate))
+              ? regDate.toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' })
+              : '-';
+
+            // Populate tabs — selalu kirim array
+            populateKuesionerTab(Array.isArray(data.kuesioner) ? data.kuesioner : []);
+            populateDeteksiTab(Array.isArray(data.deteksi)   ? data.deteksi   : []);
+
+          } catch (parseErr) {
+            console.error('[openStudentDetail] parse error:', parseErr);
+            alert('Terjadi kesalahan saat memproses data. Silakan coba lagi.');
+            closeModal();
+          }
+        })
+        .catch(err => {
+          console.error('[openStudentDetail] fetch error:', err);
+          alert('Gagal mengambil data dari server. Periksa koneksi Anda.');
+          closeModal();
+        });
+    }
+
+    // ── Tutup modal ─────────────────────────────────────────────────────────
+    function closeModal() {
+      modal.classList.remove('active');
+      document.querySelectorAll('#deteksiContent video').forEach(v => {
+        v.pause(); v.src = '';
+      });
+    }
+
+    // Klik di luar modal untuk menutup
+    modal.addEventListener('click', e => {
+      if (e.target === modal) closeModal();
+    });
+
+    // ── Ganti tab ──────────────────────────────────────────────────────────
+    function switchTab(tab) {
+      activeTab = tab;
+      document.getElementById('tabBtnKuesioner').classList.toggle('active', tab === 'kuesioner');
+      document.getElementById('tabBtnDeteksi').classList.toggle('active',   tab === 'deteksi');
+      document.getElementById('paneKuesioner').classList.toggle('active',   tab === 'kuesioner');
+      document.getElementById('paneDeteksi').classList.toggle('active',     tab === 'deteksi');
+    }
+
+    // ── Populate tab kuesioner ──────────────────────────────────────────────
+    function populateKuesionerTab(records) {
+      const loading   = document.getElementById('kuesionerLoading');
+      const container = document.getElementById('kuesionerContent');
+      loading.style.display   = 'none';
+      container.style.display = 'block';
+      container.innerHTML     = '';
+
+      // Defensive: harus Array dengan isi
+      if (!records || !Array.isArray(records) || records.length === 0) {
+        container.innerHTML = `
+          <div class="pane-empty">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M9 11l3 3L22 4"/>
+              <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+            </svg>
+            <p>Belum ada data kuesioner untuk siswa ini.</p>
+          </div>`;
+        return;
+      }
+
+      records.forEach(r => {
+        const dateStr = r.created_at
+          ? new Date(r.created_at).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' })
+          : '-';
+
+        let scoreBlock = '';
+
+        if (r.kuesioner_type === 'dass21') {
+          const dep = classifyDass('depression', r.scores?.depression ?? 0);
+          const anx = classifyDass('anxiety',    r.scores?.anxiety    ?? 0);
+          const str = classifyDass('stress',     r.scores?.stress     ?? 0);
+          scoreBlock = `
+            <div class="score-cards-grid">
+              <div class="score-detail-card">
+                <h4>Depresi</h4>
+                <div class="score-num">${r.scores?.depression ?? '-'}</div>
+                <span class="severity-badge ${dep.cls}">${dep.label}</span>
+              </div>
+              <div class="score-detail-card">
+                <h4>Kecemasan</h4>
+                <div class="score-num">${r.scores?.anxiety ?? '-'}</div>
+                <span class="severity-badge ${anx.cls}">${anx.label}</span>
+              </div>
+              <div class="score-detail-card">
+                <h4>Stres</h4>
+                <div class="score-num">${r.scores?.stress ?? '-'}</div>
+                <span class="severity-badge ${str.cls}">${str.label}</span>
+              </div>
+            </div>`;
+        } else {
+          const cls = affectSevClass(r.category);
+          scoreBlock = `
+            <div class="score-cards-grid" style="grid-template-columns: 1fr;">
+              <div class="score-detail-card" style="display:flex;justify-content:space-around;align-items:center;">
+                <div>
+                  <h4 style="margin:0;">Skor Total</h4>
+                  <div class="score-num" style="margin:4px 0 0;">${r.total ?? '-'}</div>
+                </div>
+                <div>
+                  <h4>Kategori</h4>
+                  <span class="severity-badge ${cls}" style="font-size:.9rem;padding:5px 13px;margin-top:4px;">
+                    ${r.category ?? '-'}
+                  </span>
+                </div>
+              </div>
+            </div>`;
+        }
+
+        const card = document.createElement('div');
+        card.className = 'kuesioner-card';
+        card.innerHTML = `
+          <div class="kc-head">
+            <span class="kc-type">${r.kuesioner_type ?? '-'}</span>
+            <span class="kc-date">${dateStr}</span>
+          </div>
+          <div class="kc-label">${r.label ?? 'Hasil Kuesioner'}</div>
+          ${scoreBlock}`;
+        container.appendChild(card);
+      });
+    }
+
+    // ── Populate tab deteksi emosi ──────────────────────────────────────────
+    function populateDeteksiTab(records) {
+      const loading   = document.getElementById('deteksiLoading');
+      const container = document.getElementById('deteksiContent');
+      loading.style.display   = 'none';
+      container.style.display = 'block';
+      container.innerHTML     = '';
+
+      if (!records || !Array.isArray(records) || records.length === 0) {
+        container.innerHTML = `
+          <div class="pane-empty">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+              <circle cx="12" cy="12" r="3"/>
+            </svg>
+            <p>Belum ada data deteksi emosi untuk siswa ini.</p>
+          </div>`;
+        return;
+      }
+
+      records.forEach(r => {
+        const dateStr = r.created_at
+          ? new Date(r.created_at).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' })
+          : '-';
+
+        const emotionData = r.emotion_data && typeof r.emotion_data === 'object'
+          ? r.emotion_data : {};
+
+        // Sort emosi dari tertinggi ke terendah
+        const sorted = Object.entries(emotionData).sort((a, b) => b[1] - a[1]);
+
+        const barsHtml = sorted.map(([key, pct]) => `
+          <div class="emo-row">
+            <div class="emo-meta">
+              <span class="emo-name">${emosiLabel[key] ?? key}</span>
+              <span class="emo-pct">${Number(pct).toFixed(1)}%</span>
+            </div>
+            <div class="bar-track">
+              <div class="bar-fill" style="width:${Math.min(pct, 100)}%"></div>
+            </div>
+          </div>`).join('');
+
+        // Video player — path dari DB: "templates/uploads/videos/filename.webm"
+        let videoHtml = '';
+        if (r.video_path) {
+          const staticPath = r.video_path.replace(/^templates\//, '/templates/');
+          videoHtml = `
+            <div class="video-player-wrap">
+              <video id="webcamPlayer" controls preload="metadata" style="max-height:200px;">
+                <source src="${staticPath}" type="video/webm">
+                Browser Anda tidak mendukung pemutar video.
+              </video>
+            </div>`;
+        }
+
+        const card = document.createElement('div');
+        card.className = 'deteksi-card';
+        card.innerHTML = `
+          <div class="dc-head">
+            <div class="dc-dominant">
+              <div class="dc-dominant-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"/>
+                  <path d="M8 14s1.5 2 4 2 4-2 4-2"/>
+                  <line x1="9" y1="9" x2="9.01" y2="9"/>
+                  <line x1="15" y1="9" x2="15.01" y2="9"/>
+                </svg>
+              </div>
+              <div>
+                <div style="font-size:0.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;">Emosi Dominan</div>
+                ${emosiLabel[r.dominant_emotion] ?? r.dominant_emotion ?? '-'}
+              </div>
+            </div>
+            <span class="kc-date">${dateStr}</span>
+          </div>
+          <div class="emotion-bars">${barsHtml || '<p style="color:var(--muted);font-size:.85rem;">Data emosi tidak tersedia.</p>'}</div>
+          ${videoHtml}`;
+        container.appendChild(card);
+      });
+    }
+
+    // ── Hapus siswa ─────────────────────────────────────────────────────────
+    function deleteStudent(siswaId, namaStr) {
+      if (!confirm(`Hapus data siswa "${namaStr}" beserta semua data asesmen dan video-nya?\n\nTindakan ini TIDAK BISA dibatalkan.`)) {
+        return;
+      }
+      const btn = document.getElementById(`deleteBtn-${siswaId}`);
+      if (btn) { btn.disabled = true; btn.innerText = '...'; }
+
+      fetch(`/admin/siswa-delete/${siswaId}`, { method: 'POST' })
+        .then(r => r.json())
+        .then(data => {
+          if (data.success) {
+            // Hapus baris tabel dari DOM tanpa reload
+            const row = btn?.closest('tr');
+            if (row) {
+              row.style.transition = 'opacity .3s';
+              row.style.opacity = '0';
+              setTimeout(() => row.remove(), 320);
+            } else {
+              location.reload();
+            }
+          } else {
+            alert('Gagal menghapus: ' + (data.error || 'Unknown error'));
+            if (btn) { btn.disabled = false; btn.innerHTML = `
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="12" height="12">
+                <polyline points="3 6 5 6 21 6"/>
+                <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+              </svg>`; }
+          }
+        })
+        .catch(err => {
+          console.error('[deleteStudent]', err);
+          alert('Gagal menghapus. Periksa koneksi Anda.');
+          if (btn) btn.disabled = false;
+        });
+    }
+
+    // ── Keyboard ESC untuk tutup modal ─────────────────────────────────────
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape' && modal.classList.contains('active')) closeModal();
+    });
+  </script>
+
+</body>
+</html>

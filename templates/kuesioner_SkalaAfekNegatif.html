@@ -266,7 +266,7 @@
         checkbox.dataset.qnum = qNum;
 
         checkbox.addEventListener('change', function () {
-          // Enforce single selection per question
+          // Pilihan tunggal per pertanyaan
           const siblings = form.querySelectorAll('input[name="q' + qNum + '"]');
           siblings.forEach(sib => {
             if (sib !== checkbox) {
@@ -301,7 +301,9 @@
       progressText.textContent = answered + ' / ' + questions.length + ' terjawab';
     }
 
-    document.getElementById('submitBtn').addEventListener('click', function () {
+    // Menggunakan async/await untuk proses pengiriman data HTTP POST
+    document.getElementById('submitBtn').addEventListener('click', async function () {
+      const submitBtn = this;
       const answers = {};
       let unanswered = [];
 
@@ -321,6 +323,7 @@
         return;
       }
 
+      // Kalkulasi Skor dan Kategori
       const scoreMap = { STS: 1, TS: 2, S: 3, SS: 4 };
       const total = Object.values(answers).reduce((sum, v) => sum + scoreMap[v], 0);
 
@@ -331,22 +334,55 @@
       else if (total > 35) category = 'Rendah';
       else category = 'Sangat Rendah';
 
-      const record = {
+      // Payload JSON disesuaikan dengan kebutuhan endpoint Flask (/submit-kuesioner)
+      const payload = {
+        kuesioner_type: 'afeksi_negatif',
         label: 'Skala Afeksi Negatif',
-        questions: questions,
         answers: answers,
+        scores: {
+          total_score: total
+        },
         total: total,
-        category: category,
-        submittedAt: new Date().toISOString()
+        category: category
       };
 
-      try {
-        localStorage.setItem("afeksi_negatif_result", JSON.stringify(record));
-      } catch (e) {
-        console.error("Gagal menyimpan hasil:", e);
-      }
+      // Nonaktifkan tombol untuk mencegah pengiriman ganda
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Menyimpan...';
 
-      window.location.href = window.location.href = "{{ url_for('hasil_kuesioner') }}";;
+      try {
+        // Kirim request ke backend Flask
+        const response = await fetch('/submit-kuesioner', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(payload)
+        });
+
+        const result = await response.json();
+
+        if (response.ok && result.success) {
+          // Simpan juga ke localStorage untuk pencatatan di browser
+          localStorage.setItem('afeksi_negatif_result', JSON.stringify({
+            ...payload,
+            questions: questions,
+            submittedAt: new Date().toISOString()
+          }));
+
+          // Redirect ke halaman hasil kuesioner
+          window.location.href = "{{ url_for('hasil_kuesioner') }}";
+        } else {
+          alert('Gagal menyimpan hasil: ' + (result.error || 'Terjadi kesalahan.'));
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Kirim Jawaban';
+        }
+      } catch (error) {
+        console.error('Error saat submit kuesioner:', error);
+        alert('Terjadi kesalahan jaringan atau server.');
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Kirim Jawaban';
+      }
     });
   </script>
 </body>

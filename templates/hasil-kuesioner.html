@@ -46,48 +46,6 @@
       padding: 0 24px;
     }
 
-    header {
-      padding: 28px 0;
-      border-bottom: 1px solid var(--line);
-      margin-bottom: 8px;
-    }
-
-    .brand {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-
-    .brand-mark {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-family: 'Space Grotesk', sans-serif;
-      font-weight: 600;
-      font-size: 1.05rem;
-    }
-
-    .brand-mark .dot {
-      width: 9px;
-      height: 9px;
-      border-radius: 50%;
-      background: var(--teal);
-      box-shadow: 0 0 0 3px var(--teal-soft);
-    }
-
-    .back-link {
-      font-size: 0.82rem;
-      color: var(--muted);
-      text-decoration: none;
-      border: 1px solid var(--line);
-      border-radius: 20px;
-      padding: 7px 14px;
-    }
-
-    .back-link:hover {
-      border-color: var(--muted);
-    }
-
     .hero {
       padding: 36px 0 28px;
     }
@@ -138,11 +96,6 @@
       background: #fafbfc;
     }
 
-    .btn.danger {
-      color: #a13a3a;
-      border-color: #f0d3d3;
-    }
-
     .section {
       background: var(--panel);
       border: 1px solid var(--line);
@@ -169,7 +122,7 @@
       align-items: flex-start;
       flex-wrap: wrap;
       gap: 10px;
-      margin-bottom: 6px;
+      margin-bottom: 12px;
     }
 
     .section-title {
@@ -200,6 +153,7 @@
       grid-template-columns: repeat(3, 1fr);
       gap: 10px;
       margin-top: 14px;
+      margin-bottom: 18px;
     }
 
     .score-card {
@@ -231,55 +185,11 @@
       border-radius: 20px;
     }
 
-    .sev-normal {
-      background: #e3f5e9;
-      color: #2a8f52;
-    }
-
-    .sev-mild {
-      background: #fdf3d8;
-      color: #9a7413;
-    }
-
-    .sev-moderate {
-      background: #fde6d3;
-      color: #b2611a;
-    }
-
-    .sev-severe {
-      background: #fbdede;
-      color: #c03f3f;
-    }
-
-    .sev-extremely-severe {
-      background: #f4d2d2;
-      color: #96262c;
-    }
-
-    .sev-sangat-rendah {
-      background: #e3f5e9;
-      color: #2a8f52;
-    }
-
-    .sev-rendah {
-      background: #eaf6e6;
-      color: #4d8f2a;
-    }
-
-    .sev-sedang {
-      background: #fdf3d8;
-      color: #9a7413;
-    }
-
-    .sev-tinggi {
-      background: #fde6d3;
-      color: #b2611a;
-    }
-
-    .sev-sangat-tinggi {
-      background: #fbdede;
-      color: #c03f3f;
-    }
+    .sev-normal, .sev-sangat-rendah { background: #e3f5e9; color: #2a8f52; }
+    .sev-mild, .sev-rendah { background: #eaf6e6; color: #4d8f2a; }
+    .sev-moderate, .sev-sedang { background: #fdf3d8; color: #9a7413; }
+    .sev-severe, .sev-tinggi { background: #fde6d3; color: #b2611a; }
+    .sev-extremely-severe, .sev-sangat-tinggi { background: #fbdede; color: #c03f3f; }
 
     .empty-state {
       text-align: center;
@@ -340,21 +250,10 @@
       border-bottom: none;
     }
 
-    footer {
-      text-align: center;
-      color: var(--muted);
-      font-size: 0.78rem;
-      padding-top: 20px;
-    }
-
     @media (max-width:600px) {
-      h1 {
-        font-size: 1.6rem;
-      }
-
-      .section {
-        padding: 20px 18px;
-      }
+      h1 { font-size: 1.6rem; }
+      .section { padding: 20px 18px; }
+      .score-grid { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -365,16 +264,14 @@
 
   <div class="wrap">
     <div class="hero">
-      <div class="eyebrow">Ringkasan Hasil</div>
-      <h1>Semua jawaban dalam satu halaman.</h1>
-      <p class="lede">Halaman ini menampilkan jawaban yang tersimpan dari kuesioner DASS-21, Skala Afeksi Negatif, dan
-        Skala Afeksi Positif di perangkat ini. Isi ketiga kuesioner terlebih dahulu agar ringkasan lengkap.</p>
+      <div class="eyebrow">Ringkasan Hasil Siswa</div>
+      <h1>Hasil Kuesioner Anda</h1>
+      <p class="lede">Halaman ini menampilkan riwayat hasil kuesioner yang tersimpan resmi di akun Anda. Jika kuesioner belum diisi, halaman akan menampilkan status kosong.</p>
     </div>
 
     <div class="toolbar">
-      <button class="btn" onclick="location.reload()">Muat ulang</button>
+      <button class="btn" onclick="location.reload()">Muat Ulang</button>
       <button class="btn" onclick="downloadJSON()">Unduh sebagai JSON</button>
-      <button class="btn danger" onclick="clearAll()">Hapus semua hasil</button>
     </div>
 
     <div id="results"></div>
@@ -383,10 +280,48 @@
   {% include 'partials/footer.html' %}
 
   <script>
+    // Data DB yang di-inject secara langsung dari Backend Flask ke Javascript
+    const dbData = {{ kuesioner_db | tojson | safe }};
+
+    // Daftar Pertanyaan untuk Rendering Tabel
+    const questionsList = {
+      dass21: [
+        "Saya sama sekali tidak dapat merasakan perasaan positif.",
+        "Saya merasa sulit berinisiatif melakukan sesuatu.",
+        "Saya merasa tidak ada lagi yang bisa saya harapkan.",
+        "Saya merasa sedih dan tertekan.",
+        "Saya tidak bisa merasa antusias terhadap hal apapun.",
+        "Saya merasa diri saya tidak berharga.",
+        "Saya merasa hidup ini tidak berarti.",
+        "Saya merasa rongga mulut saya kering.",
+        "Saya merasa kesulitan bernafas.",
+        "Saya merasa gemetar.",
+        "Saya merasa khawatir menjadi panik.",
+        "Saya merasa hampir panik.",
+        "Saya menyadari kondisi jantung saya.",
+        "Saya merasa ketakutan tanpa alasan jelas.",
+        "Saya merasa sulit untuk beristirahat.",
+        "Saya cenderung menunjukkan reaksi berlebihan.",
+        "Saya merasa energi saya terkuras.",
+        "Saya merasa gelisah.",
+        "Saya merasa sulit untuk merasa tenang.",
+        "Saya sulit untuk bersabar.",
+        "Perasaan saya mudah tergugah."
+      ],
+      afeksi_positif: [
+        "Saat ini saya merasa bersemangat.", "Saat ini saya merasa kuat.", "Saat ini saya merasa aktif.", "Saat ini saya merasa waspada/ siap mengantisipasi.", "Saat ini saya merasa konsentrasi.", "Saat ini saya merasa teguh/ kokoh.", "Saat ini saya merasa mempunyai ide.", "Saat ini saya merasa berminat.", "Saat ini saya merasa antusias/ punya motivasi.", "Saat ini saya merasa tegar.",
+        "Biasanya saya merasa bersemangat.", "Biasanya saya merasa kuat.", "Biasanya saya merasa aktif.", "Biasanya saya merasa waspada/siap mengantisipasi.", "Biasanya saya merasa konsentrasi.", "Biasanya saya merasa teguh/kokoh.", "Biasanya saya merasa mempunyai ide.", "Biasanya saya merasa berminat.", "Biasanya saya merasa antusias/punya motivasi.", "Biasanya saya merasa tegar."
+      ],
+      afeksi_negatif: [
+        "Saat ini saya merasa tegang", "Saat ini saya merasa putus asa", "Saat ini saya merasa ngeri", "Saat ini saya merasa jengkel", "Saat ini saya merasa mudah tersinggung", "Saat ini saya merasa malu", "Saat ini saya merasa takut", "Saat ini saya merasa gelisah", "Saat ini saya merasa gugup", "Saat ini saya merasa kecewa",
+        "Biasanya saya merasa tegang", "Biasanya saya merasa putus asa", "Biasanya saya merasa ngeri", "Biasanya saya merasa jengkel", "Biasanya saya merasa mudah tersinggung", "Biasanya saya merasa malu", "Biasanya saya merasa takut", "Biasanya saya merasa gelisah", "Biasanya saya merasa gugup", "Biasanya saya merasa kecewa"
+      ]
+    };
+
     const configs = [
-      { key: 'dass21_result', accent: 'teal', link: "{{ url_for('kuesioner_dass') }}", linkLabel: 'Isi kuesioner DASS-21', scale: '0 - 3', showScores: true },
-      { key: 'afeksi_negatif_result', accent: 'amber', link: "{{ url_for('kuesioner_afek_negatif') }}", linkLabel: 'Isi Skala Afeksi Negatif', scale: 'STS - TS - S - SS', showTotalCategory: true },
-      { key: 'afeksi_positif_result', accent: 'violet', link: "{{ url_for('kuesioner_afek_positif') }}", linkLabel: 'Isi Skala Afeksi Positif', scale: 'STS - TS - S - SS', showTotalCategory: true }
+      { key: 'dass21', accent: 'teal', title: 'kuesioner DASS-21', link: "{{ url_for('kuesioner_dass') }}", linkLabel: 'Isi kuesioner DASS-21' },
+      { key: 'afeksi_negatif', accent: 'amber', title: 'Skala Afeksi Negatif', link: "{{ url_for('kuesioner_afek_negatif') }}", linkLabel: 'Isi Skala Afeksi Negatif' },
+      { key: 'afeksi_positif', accent: 'violet', title: 'Skala Afeksi Positif', link: "{{ url_for('kuesioner_afek_positif') }}", linkLabel: 'Isi Skala Afeksi Positif' }
     ];
 
     const dassRanges = {
@@ -421,18 +356,8 @@
       return ranges[ranges.length - 1];
     }
 
-    function affectSevClass(category) {
-      const map = {
-        'Sangat Rendah': 'sev-sangat-rendah',
-        'Rendah': 'sev-rendah',
-        'Sedang': 'sev-sedang',
-        'Tinggi': 'sev-tinggi',
-        'Sangat Tinggi': 'sev-sangat-tinggi'
-      };
-      return map[category] || 'sev-sedang';
-    }
-
     function formatDate(iso) {
+      if (!iso) return '-';
       try {
         const d = new Date(iso);
         return d.toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' });
@@ -446,144 +371,83 @@
       container.innerHTML = '';
 
       configs.forEach(cfg => {
-        const raw = localStorage.getItem(cfg.key);
+        const data = dbData[cfg.key];
         const section = document.createElement('div');
         section.className = 'section';
         section.dataset.accent = cfg.accent;
 
-        if (!raw) {
+        // Jika data belum ada di DB (Siswa baru / belum pernah isi)
+        if (!data) {
           section.innerHTML = `
-        <div class="section-head">
-          <h2 class="section-title">${cfg.linkLabel.replace('Isi ', '')}</h2>
-        </div>
-        <div class="empty-state">
-          <p>Belum ada jawaban tersimpan untuk kuesioner ini.</p>
-          <a href="${cfg.link}">${cfg.linkLabel} &rarr;</a>
-        </div>
-      `;
+            <div class="section-head">
+              <h2 class="section-title">${cfg.title}</h2>
+            </div>
+            <div class="empty-state">
+              <p>Belum ada jawaban tersimpan untuk kuesioner ini pada akun Anda.</p>
+              <a href="${cfg.link}">${cfg.linkLabel} &rarr;</a>
+            </div>
+          `;
           container.appendChild(section);
           return;
         }
 
-        let data;
-        try {
-          data = JSON.parse(raw);
-        } catch (e) {
-          section.innerHTML = '<p>Data tersimpan tidak valid.</p>';
-          container.appendChild(section);
-          return;
-        }
+        // Jika data tersedia dari DB
+        const questions = questionsList[cfg.key] || [];
+        const answers = data.answers || {};
 
-        const rows = data.questions.map((qText, idx) => {
+        const rows = questions.map((qText, idx) => {
           const qKey = 'q' + (idx + 1);
-          const ans = data.answers[qKey] !== undefined ? data.answers[qKey] : '&mdash;';
+          const ans = answers[qKey] !== undefined ? answers[qKey] : '&mdash;';
           return `
-        <tr>
-          <td class="qnum">${idx + 1}</td>
-          <td>${qText}</td>
-          <td class="ans">${ans}</td>
-        </tr>
-      `;
+            <tr>
+              <td class="qnum">${idx + 1}</td>
+              <td>${qText}</td>
+              <td class="ans">${ans}</td>
+            </tr>
+          `;
         }).join('');
 
-        let scoreBlockHTML = '';
-        let scorePill = '';
-
-        if (cfg.showScores) {
-          const dep = classifyDass('depression', data.scores.depression);
-          const anx = classifyDass('anxiety', data.scores.anxiety);
-          const str = classifyDass('stress', data.scores.stress);
-
-          scoreBlockHTML = `
-        <div class="score-grid">
-          <div class="score-card">
-            <div class="sc-label">Depression</div>
-            <div class="sc-value">${data.scores.depression}</div>
-            <span class="sev-badge ${dep.cls}">${dep.label}</span>
-          </div>
-          <div class="score-card">
-            <div class="sc-label">Anxiety</div>
-            <div class="sc-value">${data.scores.anxiety}</div>
-            <span class="sev-badge ${anx.cls}">${anx.label}</span>
-          </div>
-          <div class="score-card">
-            <div class="sc-label">Stress</div>
-            <div class="sc-value">${data.scores.stress}</div>
-            <span class="sev-badge ${str.cls}">${str.label}</span>
-          </div>
-        </div>
-      `;
-        } else if (cfg.showTotalCategory) {
-          const cls = affectSevClass(data.category);
-          scoreBlockHTML = `
-        <div class="score-grid" style="grid-template-columns:1fr;">
-          <div class="score-card">
-            <div class="sc-label">Total Skor</div>
-            <div class="sc-value">${data.total}</div>
-            <span class="sev-badge ${cls}">${data.category}</span>
-          </div>
-        </div>
-      `;
-        } else {
-          scorePill = `<span class="score-pill">Skala: ${cfg.scale}</span>`;
-        }
 
         section.innerHTML = `
-      <div class="section-head">
-        <div>
-          <h2 class="section-title">${data.label}</h2>
-          <div class="section-meta">Diisi ${formatDate(data.submittedAt)}</div>
-        </div>
-        ${scorePill}
-      </div>
-      ${scoreBlockHTML}
-      <table>
-        <thead>
-          <tr><th>No</th><th>Pernyataan</th><th>Jawaban</th></tr>
-        </thead>
-        <tbody>
-          ${rows}
-        </tbody>
-      </table>
-    `;
+          <div class="section-head">
+            <div>
+              <h2 class="section-title">${data.label || cfg.title}</h2>
+              <div class="section-meta">Diisi ${formatDate(data.submitted_at)}</div>
+            </div>
+          </div>
+          <table>
+            <thead>
+              <tr><th>No</th><th>Pernyataan</th><th>Jawaban</th></tr>
+            </thead>
+            <tbody>
+              ${rows}
+            </tbody>
+          </table>
+        `;
         container.appendChild(section);
       });
     }
 
     function downloadJSON() {
-      const combined = {};
-      let hasAny = false;
-      configs.forEach(cfg => {
-        const raw = localStorage.getItem(cfg.key);
-        if (raw) {
-          try {
-            combined[cfg.key] = JSON.parse(raw);
-            hasAny = true;
-          } catch (e) { }
-        }
-      });
-
-      if (!hasAny) {
+      if (Object.keys(dbData).length === 0) {
         alert('Belum ada hasil yang bisa diunduh.');
         return;
       }
-
-      const blob = new Blob([JSON.stringify(combined, null, 2)], { type: 'application/json' });
+      const blob = new Blob([JSON.stringify(dbData, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'hasil-kuesioner.json';
+      a.download = 'hasil-kuesioner-siswa.json';
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
     }
 
-    function clearAll() {
-      if (!confirm('Hapus semua hasil kuesioner yang tersimpan di browser ini?')) return;
-      configs.forEach(cfg => localStorage.removeItem(cfg.key));
-      render();
-    }
+    // Bersihkan cache localStorage lokal jika ada
+    localStorage.removeItem('dass21_result');
+    localStorage.removeItem('afeksi_negatif_result');
+    localStorage.removeItem('afeksi_positif_result');
 
     render();
   </script>
