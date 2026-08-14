@@ -74,6 +74,26 @@ def init_db():
         )
     """)
 
+    # ── Tabel 5: Hasil Deteksi Fokus Eye Tracking (FK → siswa.id CASCADE) ─────
+    # gaze_data menyimpan SELURUH riwayat gaze dalam format terkompresi
+    # (EyeViz.pack: Float32Array base64 untuk koordinat + bitmask fiksasi/sakad).
+    # Format kompak ini menyimpan semua frame tanpa downsampling, sehingga
+    # ukuran DB tetap kecil dan riwayat tidak hilang.
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS hasil_fokus (
+            id            INTEGER PRIMARY KEY AUTOINCREMENT,
+            siswa_id      INTEGER NOT NULL,
+            session_id    TEXT,
+            duration      INTEGER,     -- detik
+            data_points   INTEGER,     -- jumlah frame gaze
+            avg_focus     REAL,        -- rata-rata focus score 0-100
+            status_counts TEXT,        -- JSON: {FOKUS, KURANG_FOKUS, ...}
+            gaze_data     TEXT,        -- JSON kompak: {v,n,f,g}
+            created_at    DATETIME DEFAULT (datetime('now', 'localtime')),
+            FOREIGN KEY (siswa_id) REFERENCES siswa(id) ON DELETE CASCADE
+        )
+    """)
+
     # ── Seed Admin Default (hanya jika belum ada akun admin sama sekali) ────────
     existing = cursor.execute("SELECT COUNT(*) FROM admin").fetchone()[0]
     if existing == 0:

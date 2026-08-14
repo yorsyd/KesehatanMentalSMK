@@ -10,6 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <script src="{{ url_for('static', filename='js/eye-viz.js') }}"></script>
 
   <style>
     /* ── Dashboard-specific overrides ──────────────────────────────────── */
@@ -465,6 +466,13 @@
           </div>
           <div class="stat-sub">siswa telah rekam emosi</div>
         </div>
+        <div class="stat-card">
+          <div class="stat-label">Ada Data Fokus</div>
+          <div class="stat-value" id="statFokus">
+            {{ students | selectattr('count_fokus', 'greaterthan', 0) | list | length }}
+          </div>
+          <div class="stat-sub">siswa telah eye tracking</div>
+        </div>
       </div>
 
       <!-- Controls: search + filter -->
@@ -487,6 +495,7 @@
             <option value="semua"    {% if status_filter == 'semua'    %}selected{% endif %}>Semua Siswa</option>
             <option value="kuesioner"{% if status_filter == 'kuesioner'%}selected{% endif %}>Punya Data Kuesioner</option>
             <option value="deteksi"  {% if status_filter == 'deteksi'  %}selected{% endif %}>Punya Data Deteksi</option>
+            <option value="fokus"    {% if status_filter == 'fokus'    %}selected{% endif %}>Punya Data Fokus</option>
             <option value="kedua"    {% if status_filter == 'kedua'    %}selected{% endif %}>Punya Kedua Data</option>
           </select>
           <button type="submit" class="btn btn-primary" style="border-radius: 10px; padding: 10px 18px; font-size: 0.88rem;">
@@ -509,6 +518,7 @@
               <th>Sekolah</th>
               <th>Kuesioner</th>
               <th>Deteksi Emosi</th>
+              <th>Deteksi Fokus</th>
               <th>Didaftar</th>
               <th style="width: 140px;">Aksi</th>
             </tr>
@@ -544,6 +554,19 @@
                   <span class="badge badge-amber">
                     <span class="badge-dot dot-amber"></span>
                     {{ s.count_deteksi }} rekaman
+                  </span>
+                {% else %}
+                  <span class="badge badge-no">
+                    <span class="badge-dot dot-no"></span>
+                    Belum ada
+                  </span>
+                {% endif %}
+              </td>
+              <td>
+                {% if s.count_fokus > 0 %}
+                  <span class="badge badge-yes" style="background:var(--violet-soft);color:var(--violet);border-color:rgba(74,79,214,.2);">
+                    <span class="badge-dot" style="background:var(--violet);"></span>
+                    {{ s.count_fokus }} sesi
                   </span>
                 {% else %}
                   <span class="badge badge-no">
@@ -648,6 +671,13 @@
           </svg>
           Deteksi Emosi
         </button>
+        <button class="tab-btn" id="tabBtnFokus" onclick="switchTab('fokus')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M12 2v4M12 18v4M2 12h4M18 12h4"/>
+          </svg>
+          Deteksi Fokus
+        </button>
       </div>
 
       <!-- Tab panes -->
@@ -666,6 +696,14 @@
             <div class="spinner"></div> Memuat data deteksi emosi...
           </div>
           <div id="deteksiContent" style="display:none;"></div>
+        </div>
+
+        <!-- Deteksi Fokus pane -->
+        <div class="tab-pane" id="paneFokus">
+          <div class="loading-state" id="fokusLoading">
+            <div class="spinner"></div> Memuat data deteksi fokus...
+          </div>
+          <div id="fokusContent" style="display:none;"></div>
         </div>
       </div>
 
@@ -744,8 +782,11 @@
       document.getElementById('kuesionerContent').style.display  = 'none';
       document.getElementById('deteksiLoading').style.display    = 'flex';
       document.getElementById('deteksiContent').style.display    = 'none';
+      document.getElementById('fokusLoading').style.display      = 'flex';
+      document.getElementById('fokusContent').style.display      = 'none';
       document.getElementById('kuesionerContent').innerHTML = '';
       document.getElementById('deteksiContent').innerHTML   = '';
+      document.getElementById('fokusContent').innerHTML     = '';
 
       // Stop video jika ada yang sedang diputar
       document.querySelectorAll('#deteksiContent video').forEach(v => {
@@ -788,6 +829,7 @@
             // Populate tabs — selalu kirim array
             populateKuesionerTab(Array.isArray(data.kuesioner) ? data.kuesioner : []);
             populateDeteksiTab(Array.isArray(data.deteksi)   ? data.deteksi   : []);
+            populateFokusTab(Array.isArray(data.fokus)       ? data.fokus     : []);
 
           } catch (parseErr) {
             console.error('[openStudentDetail] parse error:', parseErr);
@@ -816,12 +858,21 @@
     });
 
     // ── Ganti tab ──────────────────────────────────────────────────────────
+    let fokusRenderCallbacks = [];
+
     function switchTab(tab) {
       activeTab = tab;
       document.getElementById('tabBtnKuesioner').classList.toggle('active', tab === 'kuesioner');
       document.getElementById('tabBtnDeteksi').classList.toggle('active',   tab === 'deteksi');
+      document.getElementById('tabBtnFokus').classList.toggle('active',     tab === 'fokus');
       document.getElementById('paneKuesioner').classList.toggle('active',   tab === 'kuesioner');
       document.getElementById('paneDeteksi').classList.toggle('active',     tab === 'deteksi');
+      document.getElementById('paneFokus').classList.toggle('active',       tab === 'fokus');
+
+      // Render ulang canvas saat tab fokus dibuka (canvas tersembunyi tidak ter-render)
+      if (tab === 'fokus') {
+        setTimeout(() => fokusRenderCallbacks.forEach(fn => fn()), 40);
+      }
     }
 
     // ── Populate tab kuesioner ──────────────────────────────────────────────
@@ -984,6 +1035,94 @@
           <div class="emotion-bars">${barsHtml || '<p style="color:var(--muted);font-size:.85rem;">Data emosi tidak tersedia.</p>'}</div>
           ${videoHtml}`;
         container.appendChild(card);
+      });
+    }
+
+    // ── Populate tab deteksi fokus (eye tracking) ────────────────────────────
+    function populateFokusTab(records) {
+      const loading   = document.getElementById('fokusLoading');
+      const container = document.getElementById('fokusContent');
+      loading.style.display   = 'none';
+      container.style.display = 'block';
+      container.innerHTML     = '';
+      fokusRenderCallbacks = [];
+
+      if (!records || !Array.isArray(records) || records.length === 0) {
+        container.innerHTML = `
+          <div class="pane-empty">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <circle cx="12" cy="12" r="3"/>
+              <path d="M12 2v4M12 18v4M2 12h4M18 12h4"/>
+            </svg>
+            <p>Belum ada data deteksi fokus untuk siswa ini.</p>
+          </div>`;
+        return;
+      }
+
+      records.forEach((r, idx) => {
+        const dateStr = r.created_at
+          ? new Date(r.created_at).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' })
+          : '-';
+        const sc = r.status_counts && typeof r.status_counts === 'object' ? r.status_counts : {};
+        const n = r.data_points || 0;
+        const total = n || 1;
+        const pct = (k) => Math.round(((sc[k] || 0) / total) * 100);
+
+        const card = document.createElement('div');
+        card.className = 'deteksi-card';
+        card.innerHTML = `
+          <div class="dc-head">
+            <div class="dc-dominant">
+              <div class="dc-dominant-icon" style="background:var(--violet-soft);color:var(--violet);">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="3"/>
+                  <path d="M12 2v4M12 18v4M2 12h4M18 12h4"/>
+                </svg>
+              </div>
+              <div>
+                <div style="font-size:0.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;">Rata-rata Fokus</div>
+                <div style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:1.2rem;color:var(--ink);">
+                  ${r.avg_focus ?? '-'}%
+                </div>
+              </div>
+            </div>
+            <span class="kc-date">${dateStr}</span>
+          </div>
+
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:8px;margin-bottom:14px;">
+            <div class="score-detail-card"><h4>Durasi</h4><div class="score-num" style="font-size:1rem;">${r.duration ?? 0}s</div></div>
+            <div class="score-detail-card"><h4>Data</h4><div class="score-num" style="font-size:1rem;">${n}</div></div>
+            <div class="score-detail-card"><h4>FOKUS</h4><div class="score-num" style="font-size:1rem;color:var(--teal);">${pct('FOKUS')}%</div></div>
+            <div class="score-detail-card"><h4>KURANG</h4><div class="score-num" style="font-size:1rem;color:var(--amber);">${pct('KURANG_FOKUS')}%</div></div>
+            <div class="score-detail-card"><h4>TDK FOKUS</h4><div class="score-num" style="font-size:1rem;color:var(--danger);">${pct('TDK_FOKUS')}%</div></div>
+          </div>
+
+          <div class="emotion-bars">
+            <div class="panel camera-panel" style="padding:12px;">
+              <div style="font-size:.75rem;font-weight:600;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em;">Heatmap Gaze</div>
+              <div style="width:100%;height:220px;">
+                <canvas class="fokus-heatmap-${idx}" style="width:100%;height:100%;"></canvas>
+              </div>
+            </div>
+            <div class="panel camera-panel" style="padding:12px;">
+              <div style="font-size:.75rem;font-weight:600;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em;">Urutan Fiksasi &amp; Sakad</div>
+              <div style="width:100%;height:220px;">
+                <canvas class="fokus-scanpath-${idx}" style="width:100%;height:100%;"></canvas>
+              </div>
+            </div>
+          </div>`;
+        container.appendChild(card);
+
+        // Render heatmap + scanpath dari data terkompresi (tanpa downsampling)
+        if (typeof EyeViz !== 'undefined' && r.gaze_data) {
+          const history = EyeViz.unpack(r.gaze_data);
+          fokusRenderCallbacks.push(() => {
+            const hc = container.querySelector('.fokus-heatmap-' + idx);
+            const sc2 = container.querySelector('.fokus-scanpath-' + idx);
+            if (hc && hc.getBoundingClientRect().width > 0) EyeViz.renderHeatmap(hc, history);
+            if (sc2 && sc2.getBoundingClientRect().width > 0) EyeViz.renderScanpath(sc2, history);
+          });
+        }
       });
     }
 

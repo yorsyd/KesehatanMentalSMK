@@ -10,7 +10,11 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=2">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=3">
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.18/vision_bundle.js"
+        crossorigin="anonymous"></script>
+    <script src="{{ url_for('static', filename='js/eye-viz.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/eye-tracker.js') }}"></script>
 </head>
 
 <body>
@@ -18,81 +22,152 @@
 
     <main class="page">
         <div class="wrap">
-            <div class="wrap">
-                <div class="subheader">
-                    <button class="back-btn" onclick="window.location.href='{{ url_for('index') }}';">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4">
-                            <path d="M19 12H5M11 6l-6 6 6 6" />
-                        </svg>
-                        Kembali
-                    </button>
-                    <span class="crumb">TEST 02 / DETEKSI EMOSI</span>
-                </div>
+            <div class="subheader">
+                <button class="back-btn" onclick="window.location.href='{{ url_for('index') }}';">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4">
+                        <path d="M19 12H5M11 6l-6 6 6 6" />
+                    </svg>
+                    Kembali
+                </button>
+                <span class="crumb">TEST 02 / DETEKSI EMOSI</span>
+            </div>
 
-                <section class="hero">
-                    <div class="eyebrow">Platform Asesmen Kesehatan Mental Siswa SMK</div>
-                    <h1>Ceritakan perasaanmu saat ini</h1>
-                </section>
+            <section class="hero">
+                <div class="eyebrow">Platform Asesmen Kesehatan Mental Siswa SMK</div>
+                <h1>Ceritakan perasaanmu saat ini</h1>
+            </section>
 
-                <div class="layout-single">
+            <div class="layout-single">
 
-                    <!-- ── Box Pertanyaan Terbuka ── -->
-                    <section class="question-panel">
-                        <div class="qp-label">Petunjuk &amp; Refleksi</div>
+                <!-- ── Box Pertanyaan Terbuka ── -->
+                <section class="question-panel">
+                    <div class="qp-label">Petunjuk &amp; Refleksi</div>
 
-                        <div class="qp-header">
-                            <h2 class="qp-title">Halo! Mari luangkan waktu sejenak untuk berbagi cerita</h2>
-                            <p class="qp-desc">Terima kasih atas kesediaanmu berpartisipasi. Sesi ini dirancang untuk
-                                mendengarkan ceritamu dengan santai dan nyaman.</p>
-                        </div>
-
-                        <ol class="qp-steps-list"
-                            style="margin: 2rem 0; padding-left: 1.5rem; line-height: 1.6; color: var(--muted-alt, #555);">
-                            <li style="margin-bottom: 1.2rem; font-size: 0.95rem;">
-                                <strong>Tampil Apa Adanya</strong>: Tidak perlu sungkan atau ragu. Tampilkan dirimu apa
-                                adanya karena <strong>kerahasiaan identitas dan ceritamu sepenuhnya aman &amp;
-                                    dijaga</strong>.
-                            </li>
-                            <li style="margin-bottom: 1.2rem; font-size: 0.95rem;">
-                                <strong>Bercerita Bebas</strong>: Ceritakan pengalamanmu yang dianggap positif, negatif
-                                baik pengalaman masa lalu, sekarang atau yang akan datang.
-                            </li>
-                            <li style="margin-bottom: 1.2rem; font-size: 0.95rem;">
-                                <strong>Durasi 3 Menit</strong>: Setelah siap, tekan tombol <strong>Mulai Sesi</strong>
-                                di
-                                bawah. Tataplah layar dan ceritakan perasaanmu secara bebas selama 3 menit.
-                            </li>
-                        </ol>
-
-                        <div class="qp-footer-note">
-                            <span>Ambil napas dalam-dalam, buat dirimu rileks. Jika belum siap, kamu tidak perlu
-                                terburu-buru memulai. Sudah siap?</span>
-                        </div>
-                    </section>
-
-                    <!-- ── Session Controls ── -->
-                    <div class="session-controls">
-                        <button id="recordBtn" class="btn btn-primary">Mulai Sesi</button>
-                        <button id="clearBtn" class="btn btn-secondary" type="button">Batalkan</button>
-                        <div id="countdownDisplay" class="countdown-display">
-                            <span class="cd-dot"></span>
-                            <span id="cdTime" class="cd-time">2:00</span>
-                            <span class="cd-label">sesi berlangsung</span>
-                        </div>
+                    <div class="qp-header">
+                        <h2 class="qp-title">Halo! Mari luangkan waktu sejenak untuk berbagi cerita</h2>
+                        <p class="qp-desc">Terima kasih atas kesediaanmu berpartisipasi. Sesi ini dirancang untuk
+                            mendengarkan ceritamu dengan santai dan nyaman.</p>
                     </div>
 
-                    <!-- ── Pesan Konfirmasi (Menggantikan Tampilan Hasil Analisis) ── -->
-                    <section id="resultArea" class="panel result-card" style="display: none;">
-                        <h2 style="margin-top:0;">Sesi Selesai</h2>
-                        <p>Terima kasih telah berbagi cerita. Data responismu telah berhasil dikirim dan tersimpan dengan aman.</p>
-                    </section>
+                    <ol class="qp-steps-list"
+                        style="margin: 2rem 0; padding-left: 1.5rem; line-height: 1.6; color: var(--muted-alt, #555);">
+                        <li style="margin-bottom: 1.2rem; font-size: 0.95rem;">
+                            <strong>Tampil Apa Adanya</strong>: Tidak perlu sungkan atau ragu. Tampilkan dirimu apa
+                            adanya karena <strong>kerahasiaan identitas dan ceritamu sepenuhnya aman &amp;
+                                dijaga</strong>.
+                        </li>
+                        <li style="margin-bottom: 1.2rem; font-size: 0.95rem;">
+                            <strong>Bercerita Bebas</strong>: Ceritakan pengalamanmu yang dianggap positif, negatif
+                            baik pengalaman masa lalu, sekarang atau yang akan datang.
+                        </li>
+                        <li style="margin-bottom: 1.2rem; font-size: 0.95rem;">
+                            <strong>Durasi 3 Menit</strong>: Setelah siap, tekan tombol <strong>Mulai Sesi</strong>
+                            di bawah. Tataplah layar dan ceritakan perasaanmu secara bebas selama 3 menit.
+                        </li>
+                        <li style="margin-bottom: 1.2rem; font-size: 0.95rem;">
+                            <strong>Deteksi Ganda</strong>: Selama sesi berlangsung, sistem juga melacak fokus &
+                            gerak mata (eye tracking) secara bersamaan untuk gambaran yang lebih lengkap.
+                        </li>
+                    </ol>
 
-                </div><!-- /.layout-single -->
-            </div>
+                    <div class="qp-footer-note">
+                        <span>Ambil napas dalam-dalam, buat dirimu rileks. Jika belum siap, kamu tidak perlu
+                            terburu-buru memulai. Sudah siap?</span>
+                    </div>
+                </section>
+
+                <!-- ── Session Controls ── -->
+                <div class="session-controls">
+                    <button id="recordBtn" class="btn btn-primary">Mulai Sesi</button>
+                    <button id="clearBtn" class="btn btn-secondary" type="button">Batalkan</button>
+                    <div id="countdownDisplay" class="countdown-display">
+                        <span class="cd-dot"></span>
+                        <span id="cdTime" class="cd-time">2:00</span>
+                        <span class="cd-label">sesi berlangsung</span>
+                    </div>
+                    <div id="eyeStatusPill" style="display:none;align-items:center;gap:8px;padding:8px 14px;border-radius:999px;
+                        background:var(--teal-soft);border:1px solid var(--teal);font-size:.8rem;color:var(--teal-dark);">
+                        <span style="width:8px;height:8px;border-radius:50%;background:var(--teal);"></span>
+                        <span id="eyeStatusText">Eye tracking aktif</span>
+                    </div>
+                </div>
+
+                <!-- ── Preview eye tracking (live) ── -->
+                <div id="eyePreviewWrap" style="display:none;">
+                    <div class="panel camera-panel">
+                        <div class="panel-head">
+                            <div class="panel-title">
+                                <h2>Pelacakan Fokus (bersamaan)</h2>
+                                <p id="eyeMetaText">Skor fokus real-time selama bercerita</p>
+                            </div>
+                            <div class="status-pill">
+                                <span class="dot" id="eyePillDot"></span>
+                                <span id="eyePillLabel">—</span>
+                            </div>
+                        </div>
+                        <div style="display:grid;grid-template-columns:1fr 200px;gap:14px;align-items:stretch;">
+                            <div class="video-frame" style="aspect-ratio:16/9;">
+                                <video id="eyeVideo" autoplay playsinline muted></video>
+                                <canvas id="eyeCanvas"></canvas>
+                                <div id="eyeLiveScore" style="position:absolute;top:10px;right:10px;background:rgba(22,35,47,.85);
+                                    color:#fff;border-radius:10px;padding:8px 12px;text-align:center;">
+                                    <div style="font-size:.58rem;text-transform:uppercase;letter-spacing:.08em;opacity:.7;">Fokus</div>
+                                    <div id="eyeLiveScoreVal" style="font-family:'Space Grotesk',sans-serif;font-size:1.3rem;font-weight:700;">—</div>
+                                </div>
+                            </div>
+                            <div style="display:flex;flex-direction:column;gap:8px;">
+                                <div class="stat-chip"><span class="label">Fokus</span><span class="val" id="eyeStatFocus">—</span></div>
+                                <div class="stat-chip"><span class="label">Fiksasi</span><span class="val" id="eyeStatFix">—</span></div>
+                                <div class="stat-chip"><span class="label">Sakad</span><span class="val" id="eyeStatSac">—</span></div>
+                                <div class="stat-chip"><span class="label">Kedipan</span><span class="val" id="eyeStatBlink">—</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ── Hasil Analisis ── -->
+                <section id="resultArea" class="panel result-card" style="display: none;">
+                    <h2 style="margin-top:0;">Sesi Selesai</h2>
+                    <p>Terima kasih telah berbagi cerita. Data responismu telah berhasil dikirim dan tersimpan dengan aman.</p>
+
+                    <div id="resultStatus" style="margin-top:12px;font-size:.9rem;color:var(--muted);"></div>
+
+                    <div id="resultDetails" style="margin-top:20px;display:grid;gap:18px;">
+                        <div class="panel camera-panel">
+                            <div class="panel-title" style="margin-bottom:14px;">
+                                <h2>Heatmap Gaze</h2>
+                                <p>Distribusi titik pandang selama bercerita</p>
+                            </div>
+                            <div style="width:100%;height:260px;">
+                                <canvas id="heatmapCanvas" style="width:100%;height:100%;"></canvas>
+                            </div>
+                        </div>
+                        <div class="panel camera-panel">
+                            <div class="panel-title" style="margin-bottom:14px;">
+                                <h2>Urutan Fiksasi &amp; Sakad</h2>
+                                <p>Scanpath: lingkaran = fiksasi, garis = sakad</p>
+                            </div>
+                            <div style="width:100%;height:260px;">
+                                <canvas id="scanpathCanvas" style="width:100%;height:100%;"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+            </div><!-- /.layout-single -->
         </div>
     </main>
 
     {% include 'partials/footer.html' %}
+
+    <style>
+        #eyeVideo, #eyeCanvas { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+        #eyeCanvas { pointer-events: none; }
+        .stat-chip { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; text-align: center; }
+        .stat-chip .label { display: block; font-size: .6rem; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin-bottom: 4px; }
+        .stat-chip .val { font-family: 'Space Grotesk', sans-serif; font-size: 1.1rem; font-weight: 700; color: var(--ink); }
+        @media (max-width: 640px) { #eyePreviewWrap > div > div { grid-template-columns: 1fr !important; } }
+    </style>
 
     <script>
         const recordBtn = document.getElementById('recordBtn');
@@ -106,6 +181,50 @@
         let timerInterval;
         let stream;
 
+        // ── Eye tracking (berjalan bersamaan) ──
+        const eyeEls = {
+            video: document.getElementById('eyeVideo'),
+            canvas: document.getElementById('eyeCanvas'),
+            wrap: document.getElementById('eyePreviewWrap'),
+            statusPill: document.getElementById('eyeStatusPill'),
+            statusText: document.getElementById('eyeStatusText'),
+            pillDot: document.getElementById('eyePillDot'),
+            pillLabel: document.getElementById('eyePillLabel'),
+            metaText: document.getElementById('eyeMetaText'),
+            liveScore: document.getElementById('eyeLiveScore'),
+            liveScoreVal: document.getElementById('eyeLiveScoreVal'),
+            statFocus: document.getElementById('eyeStatFocus'),
+            statFix: document.getElementById('eyeStatFix'),
+            statSac: document.getElementById('eyeStatSac'),
+            statBlink: document.getElementById('eyeStatBlink'),
+            heatmapCanvas: document.getElementById('heatmapCanvas'),
+            scanpathCanvas: document.getElementById('scanpathCanvas'),
+        };
+        let eyeSessionData = null;
+
+        const tracker = new EyeTracker({
+            video: eyeEls.video,
+            canvas: eyeEls.canvas,
+            mirrored: true,
+            onData: handleEyeData,
+            onError: (msg) => {
+                eyeEls.statusText.textContent = 'Eye tracking: ' + msg;
+            },
+        });
+
+        function handleEyeData(data) {
+            if (!eyeSessionData) return;
+            tracker.recordData(data);
+            eyeEls.liveScore.style.display = 'block';
+            eyeEls.liveScoreVal.textContent = data.focus_score ?? '—';
+            eyeEls.pillLabel.textContent = data.status || '—';
+            eyeEls.pillDot.style.background = data.status === 'FOKUS' ? '#34d399' : (data.status === 'KURANG_FOKUS' ? '#b8873a' : '#ef4444');
+            eyeEls.statFocus.textContent = (data.focus_score ?? '—') + '%';
+            eyeEls.statFix.textContent = (data.fixation_time ?? '0').toFixed ? (data.fixation_time ?? 0).toFixed(1) + 's' : data.fixation_time;
+            eyeEls.statSac.textContent = data.saccade_count ?? 0;
+            eyeEls.statBlink.textContent = data.blink_count ?? 0;
+        }
+
         // ── Format seconds → M:SS ──
         function formatTime(seconds) {
             const m = Math.floor(seconds / 60);
@@ -117,6 +236,8 @@
         async function initCamera() {
             try {
                 stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+                // Satu stream dipakai BERSAMA: MediaRecorder + video preview eye tracking
+                eyeEls.video.srcObject = stream;
                 createRecorder();
             } catch (err) {
                 alert('Tidak dapat mengakses kamera: ' + err.message);
@@ -126,8 +247,23 @@
         initCamera();
 
         // ── Start recording ──
-        recordBtn.addEventListener('click', () => {
+        recordBtn.addEventListener('click', async () => {
             if (!mediaRecorder || mediaRecorder.state === 'recording') return;
+
+            // Muat model eye tracking & mulai sesi bersamaan
+            eyeEls.wrap.style.display = 'block';
+            eyeEls.statusPill.style.display = 'inline-flex';
+            eyeEls.statusText.textContent = 'Memuat model AI…';
+            const loaded = await tracker.loadModel();
+            if (!loaded) {
+                eyeEls.statusText.textContent = 'Eye tracking tidak aktif (model gagal dimuat).';
+            }
+            tracker.startSession();
+            eyeSessionData = tracker.getSessionData(); // marker agar handleEyeData aktif
+            if (tracker.modelLoaded) {
+                tracker.running = true;
+                tracker.processFrame();
+            }
 
             recordedChunks = [];
             mediaRecorder.start();
@@ -135,10 +271,12 @@
             recordBtn.disabled = true;
             recordBtn.innerText = 'Sesi Berlangsung...';
             resultArea.style.display = 'none';
+            document.getElementById('resultDetails').style.display = 'none';
+            document.getElementById('resultStatus').innerText = '';
 
             countdownDisplay.classList.add('active');
 
-            let timeLeft = 120; 
+            let timeLeft = 120;
             cdTime.innerText = formatTime(timeLeft);
             clearInterval(timerInterval);
 
@@ -190,31 +328,75 @@
             mediaRecorder.onstop = sendVideoToServer;
         }
 
-        // ── Send video to server ──
+        // ── Send video to server + kirim data fokus ──
         async function sendVideoToServer() {
+            // Stop eye tracking & kumpulkan hasil
+            let fokusData = null;
+            if (eyeSessionData) {
+                tracker.stopCamera();
+                tracker.running = false;
+                const sd = tracker.stopSession();
+                eyeSessionData = null;
+                fokusData = sd;
+            }
+
             const blob = new Blob(recordedChunks, { type: 'video/webm' });
             const formData = new FormData();
             formData.append('video', blob, 'video.webm');
 
+            const resultStatus = document.getElementById('resultStatus');
+            resultStatus.innerText = 'Mengirim data ke server…';
+
             try {
+                // 1) Video → analisis emosi
                 const response = await fetch('/analyze', {
                     method: 'POST',
                     body: formData
                 });
-
                 const data = await response.json();
-
                 if (!response.ok) {
-                    alert(data.error || 'Terjadi kesalahan saat memproses video.');
-                    resetUI();
-                    return;
+                    resultStatus.innerText = data.error || 'Terjadi kesalahan saat memproses video.';
+                } else {
+                    resultStatus.innerText = '✓ Video dianalisis.';
                 }
 
-                // Tampilkan konfirmasi sukses tanpa menampilkan detail emosi
+                // 2) Data fokus → simpan (full history terkompresi)
+                if (fokusData && fokusData.data_points > 1) {
+                    const packed = EyeViz.pack(fokusData.history);
+                    try {
+                        const fres = await fetch('/submit-fokus', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                session_id: fokusData.session_id,
+                                duration: fokusData.duration,
+                                data_points: fokusData.data_points,
+                                avg_focus: fokusData.avg_focus,
+                                status_counts: fokusData.status_counts,
+                                gaze_data: packed,
+                            }),
+                        });
+                        const fj = await fres.json();
+                        resultStatus.innerText = (resultStatus.innerText || '') + (fj.success ? ' ✓ Data fokus tersimpan.' : ' Gagal simpan fokus: ' + (fj.error || ''));
+                    } catch (e) {
+                        resultStatus.innerText += ' Gagal menghubungi server untuk data fokus.';
+                    }
+                } else {
+                    resultStatus.innerText += ' (Data fokus tidak cukup — dilewati)';
+                }
+
+                // Tampilkan hasil
                 resultArea.style.display = 'block';
+                document.getElementById('resultDetails').style.display = 'grid';
+                if (fokusData && fokusData.data_points > 1) {
+                    setTimeout(() => {
+                        EyeViz.renderHeatmap(eyeEls.heatmapCanvas, fokusData.history);
+                        EyeViz.renderScanpath(eyeEls.scanpathCanvas, fokusData.history);
+                    }, 30);
+                }
 
             } catch (err) {
-                alert('Gagal menghubungi server.');
+                resultStatus.innerText = 'Gagal menghubungi server.';
             }
 
             resetUI();
@@ -227,6 +409,7 @@
             recordBtn.disabled = false;
             recordBtn.innerText = 'Mulai Sesi';
             cdTime.innerText = '2:00';
+            eyeEls.statusPill.style.display = 'none';
         }
     </script>
 </body>

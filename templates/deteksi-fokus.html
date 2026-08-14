@@ -1,13 +1,20 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Deteksi Fokus Eye Tracking</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=2">
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.18/vision_bundle.js"
+        crossorigin="anonymous"></script>
+    <script src="{{ url_for('static', filename='js/eye-viz.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/eye-tracker.js') }}"></script>
 </head>
 
 <body>
@@ -17,36 +24,506 @@
         <div class="wrap">
             <div class="subheader">
                 <button class="back-btn" onclick="window.location.href='{{ url_for('index') }}';">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4">
+                        <path d="M19 12H5M11 6l-6 6 6 6" />
+                    </svg>
                     Kembali
                 </button>
                 <span class="crumb">TEST 03 / DETEKSI FOKUS EYE TRACKING</span>
             </div>
 
-            <section class="hero">
+            <section class="hero" style="padding:24px 0 28px;">
                 <div class="eyebrow">Platform Asesmen Kesehatan Mental Siswa SMK</div>
-                <h1>Deteksi fokus eye tracking dalam satu sesi</h1>
-                <p class="lede">Halaman ini menampung modul pelacakan fokus berbasis eye tracking. Saat modul siap, area ini bisa dipakai untuk kamera, status rekaman, dan hasil analisis fokus.</p>
+                <h1>Deteksi fokus eye tracking</h1>
+                <p class="lede">Tataplah layar secara alami. Sistem melacak pola gerak mata, fiksasi, dan sakad untuk
+                    menilai tingkat fokusmu selama sesi.</p>
             </section>
 
-            <div class="placeholder">
-                <div class="glyph-wrap">
-                    <svg width="52" height="52" viewBox="0 0 220 56" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M10 40 L 60 16 L 100 38 L 150 12 L 205 30" stroke="#4a4fd6" stroke-width="1.6" stroke-dasharray="3 5" stroke-linecap="round"/>
-                        <circle cx="10" cy="40" r="4" fill="#4a4fd6"/>
-                        <circle cx="60" cy="16" r="5.5" fill="#4a4fd6"/>
-                        <circle cx="100" cy="38" r="3.5" fill="#4a4fd6"/>
-                        <circle cx="150" cy="12" r="6.5" fill="#4a4fd6"/>
-                        <circle cx="205" cy="30" r="4" fill="#4a4fd6"/>
-                    </svg>
+            <!-- ── Status & Kontrol Sesi ── -->
+            <div class="panel camera-panel" style="margin-bottom:18px;">
+                <div class="panel-head">
+                    <div class="panel-title">
+                        <h2>Sesi Pelacakan</h2>
+                        <p id="sessionStatusText">Menunggu izin kamera…</p>
+                    </div>
+                    <div class="status-pill" id="statusPill">
+                        <span class="dot" id="statusDot"></span>
+                        <span id="statusLabel">OFFLINE</span>
+                    </div>
                 </div>
-                <h2>Modul ini sedang disiapkan</h2>
-                <p>Deteksi fokus melalui eye tracking belum tersedia di halaman ini. Tautkan modul ini ke halaman pelacakannya bila sudah siap.</p>
-                <a class="back-btn" href="{{ url_for('index') }}">Kembali ke beranda</a>
+
+                <div class="camera-actions" style="justify-content:flex-start;">
+                    <button id="startBtn" class="btn btn-primary">Mulai Sesi</button>
+                    <button id="stopBtn" class="btn btn-secondary" disabled>Hentikan Sesi</button>
+                    <button id="calibBtn" class="btn" style="border:1px solid var(--line);background:var(--surface);">Kalibrasi
+                        (Opsional)</button>
+                </div>
+                <div id="sessionCountdown" class="countdown-display" style="margin-top:14px;">
+                    <span class="cd-dot"></span>
+                    <span id="sessionTimer" class="cd-time">0:00</span>
+                    <span class="cd-label">sesi berlangsung</span>
+                </div>
+            </div>
+
+            <!-- ── Kamera ── -->
+            <div class="panel camera-panel" style="margin-bottom:18px;">
+                <div class="panel-head">
+                    <div class="panel-title">
+                        <h2>Kamera</h2>
+                        <p id="cameraMeta">Skor fokus &amp; metrik live</p>
+                    </div>
+                </div>
+                <div class="video-frame" id="cameraFrame">
+                    <video id="eyeVideo" autoplay playsinline muted></video>
+                    <canvas id="eyeCanvas"></canvas>
+                    <div class="overlay" id="cameraOverlay">
+                        <div class="caption" id="overlayText">Kamera belum aktif</div>
+                    </div>
+                    <!-- Live focus score -->
+                    <div id="liveScore" style="display:none;position:absolute;top:12px;right:12px;z-index:5;
+                        background:rgba(22,35,47,.85);color:#fff;border-radius:12px;padding:10px 14px;text-align:center;">
+                        <div style="font-size:.62rem;text-transform:uppercase;letter-spacing:.1em;opacity:.7;">Fokus</div>
+                        <div id="liveScoreVal" style="font-family:'Space Grotesk',sans-serif;font-size:1.5rem;font-weight:700;">—</div>
+                        <div id="liveStatus" style="font-size:.7rem;margin-top:2px;">—</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── Ringkasan Hasil ── -->
+            <div id="resultSection" style="display:none;">
+                <div class="panel camera-panel" style="margin-bottom:18px;">
+                    <div class="panel-head">
+                        <div class="panel-title">
+                            <h2>Ringkasan Sesi</h2>
+                            <p id="resultMeta">—</p>
+                        </div>
+                    </div>
+                    <div id="summaryStats" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:16px;"></div>
+                    <div style="background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:12px;">
+                        <div class="bar-track">
+                            <div class="bar-fill" id="distBar" style="width:0%;background:linear-gradient(90deg,#0f8b8d,#b8873a);"></div>
+                        </div>
+                        <div id="distLabels" style="display:flex;flex-wrap:wrap;gap:10px;margin-top:8px;font-size:.72rem;color:var(--muted);"></div>
+                    </div>
+                    <div id="savedMsg" style="display:none;color:var(--teal);font-size:.85rem;margin-bottom:12px;">✓ Hasil berhasil
+                        disimpan ke database.</div>
+                </div>
+
+                <div class="layout" style="grid-template-columns:1fr 1fr;">
+                    <div class="panel camera-panel">
+                        <div class="panel-title" style="margin-bottom:14px;">
+                            <h2>Heatmap Gaze</h2>
+                            <p>Distribusi titik pandang selama sesi</p>
+                        </div>
+                        <div style="width:100%;height:280px;">
+                            <canvas id="heatmapCanvas" style="width:100%;height:100%;"></canvas>
+                        </div>
+                    </div>
+                    <div class="panel camera-panel">
+                        <div class="panel-title" style="margin-bottom:14px;">
+                            <h2>Urutan Fiksasi &amp; Sakad</h2>
+                            <p>Scanpath: lingkaran = fiksasi, garis = sakad</p>
+                        </div>
+                        <div style="width:100%;height:280px;">
+                            <canvas id="scanpathCanvas" style="width:100%;height:100%;"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="panel camera-panel" style="margin-top:18px;">
+                    <div class="panel-title" style="margin-bottom:14px;">
+                        <h2>Grafik Skor Fokus</h2>
+                        <p>Perubahan skor fokus sepanjang sesi</p>
+                    </div>
+                    <div style="width:100%;height:120px;">
+                        <canvas id="focusChartCanvas" style="width:100%;height:100%;"></canvas>
+                    </div>
+                </div>
             </div>
         </div>
     </main>
 
+    <!-- ── Kalibrasi 5-titik (full-screen) ── -->
+    <div id="calibOverlay" class="calib-overlay" style="display:none;">
+        <div class="calib-backdrop"></div>
+        <button class="calib-cancel" id="calibCancelBtn">Batal</button>
+        <div class="calib-dot" id="calibDot"></div>
+        <div class="calib-dot-ring" id="calibDotRing"></div>
+        <div class="calib-confirm" id="calibConfirm">
+            <p id="calibHint">Lihat titik merah lalu tekan tombol</p>
+            <button class="btn btn-primary" id="calibConfirmBtn">Saya Lihat</button>
+            <p id="calibPointLabel" class="calib-point-label">Pojok Kiri Atas</p>
+        </div>
+        <div class="calib-collecting" id="calibCollecting">
+            <div class="spinner"></div>
+            <span id="calibCollectText">Mengambil data… 0/20</span>
+        </div>
+        <div class="calib-complete" id="calibComplete">
+            <div style="font-size:2rem;">✓</div>
+            <span>Kalibrasi Selesai!</span>
+            <button class="btn btn-primary" id="calibDoneBtn">Lanjutkan</button>
+        </div>
+        <div class="calib-progress">
+            <div class="calib-progress-track">
+                <div class="calib-progress-fill" id="calibProgressFill"></div>
+            </div>
+            <span id="calibStepText">1 / 5</span>
+        </div>
+    </div>
+
     {% include 'partials/footer.html' %}
+
+    <style>
+        .video-frame { aspect-ratio: 16 / 9; }
+        #eyeVideo, #eyeCanvas { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+        #eyeCanvas { pointer-events: none; }
+        .countdown-display.active { display: inline-flex; }
+
+        /* Kalibrasi full-screen */
+        .calib-overlay { position: fixed; inset: 0; z-index: 99999; overflow: hidden; }
+        .calib-backdrop { position: absolute; inset: 0; background: rgba(10,10,20,.88); backdrop-filter: blur(6px); }
+        .calib-cancel {
+            position: absolute; top: 16px; right: 16px; z-index: 100;
+            padding: 8px 16px; border: 1px solid rgba(255,255,255,.15); border-radius: 8px;
+            background: rgba(255,255,255,.06); color: rgba(255,255,255,.6);
+            font-family: inherit; font-size: .8rem; font-weight: 600; cursor: pointer;
+        }
+        .calib-cancel:hover { background: rgba(248,113,113,.15); color: #f87171; }
+        .calib-dot {
+            position: fixed; width: 28px; height: 28px; border-radius: 50%;
+            background: radial-gradient(circle, #ef4444, #dc2626);
+            border: 3px solid rgba(255,255,255,.9); transform: translate(-50%,-50%);
+            box-shadow: 0 0 30px rgba(239,68,68,.7); z-index: 10; pointer-events: none;
+            animation: calibPulse 1.2s ease-in-out infinite;
+        }
+        .calib-dot-ring {
+            position: fixed; width: 60px; height: 60px; border-radius: 50%;
+            border: 2px solid rgba(239,68,68,.3); transform: translate(-50%,-50%); z-index: 9;
+            pointer-events: none; animation: calibRing 1.2s ease-in-out infinite;
+        }
+        @keyframes calibPulse { 0%,100% { transform: translate(-50%,-50%) scale(1); opacity: 1; } 50% { transform: translate(-50%,-50%) scale(1.25); opacity: .8; } }
+        @keyframes calibRing { 0%,100% { transform: translate(-50%,-50%) scale(.8); opacity: .4; } 50% { transform: translate(-50%,-50%) scale(1.4); opacity: .1; } }
+        .calib-confirm {
+            position: fixed; transform: translate(-50%,0); display: flex; flex-direction: column;
+            align-items: center; gap: 10px; z-index: 20; min-width: 200px;
+        }
+        .calib-confirm p { margin: 0; color: rgba(255,255,255,.6); font-size: .82rem; text-align: center; text-shadow: 0 1px 8px rgba(0,0,0,.5); }
+        .calib-point-label { font-size: .65rem !important; text-transform: uppercase; letter-spacing: .5px; color: rgba(255,255,255,.35) !important; }
+        .calib-collecting, .calib-complete {
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%);
+            display: none; flex-direction: column; align-items: center; gap: 12px; z-index: 20;
+            color: rgba(255,255,255,.85); font-size: .9rem; font-weight: 600; text-shadow: 0 1px 8px rgba(0,0,0,.5);
+        }
+        .spinner {
+            width: 28px; height: 28px; border: 3px solid rgba(255,255,255,.15);
+            border-top-color: #6366f1; border-radius: 50%; animation: spin .8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .calib-progress {
+            position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+            display: flex; align-items: center; gap: 12px; z-index: 20; width: 80%; max-width: 360px;
+        }
+        .calib-progress-track { flex: 1; height: 6px; border-radius: 3px; background: rgba(255,255,255,.08); overflow: hidden; }
+        .calib-progress-fill { height: 100%; background: linear-gradient(90deg,#6366f1,#a855f7); transition: width .3s; }
+        #calibStepText { font-size: .72rem; font-weight: 700; color: rgba(255,255,255,.5); min-width: 32px; text-align: center; }
+    </style>
+
+    <script>
+        // ── Elemen ──
+        const els = {
+            video: document.getElementById('eyeVideo'),
+            canvas: document.getElementById('eyeCanvas'),
+            frame: document.getElementById('cameraFrame'),
+            overlay: document.getElementById('cameraOverlay'),
+            overlayText: document.getElementById('overlayText'),
+            liveScore: document.getElementById('liveScore'),
+            liveScoreVal: document.getElementById('liveScoreVal'),
+            liveStatus: document.getElementById('liveStatus'),
+            statusPill: document.getElementById('statusPill'),
+            statusDot: document.getElementById('statusDot'),
+            statusLabel: document.getElementById('statusLabel'),
+            sessionStatusText: document.getElementById('sessionStatusText'),
+            startBtn: document.getElementById('startBtn'),
+            stopBtn: document.getElementById('stopBtn'),
+            calibBtn: document.getElementById('calibBtn'),
+            sessionCountdown: document.getElementById('sessionCountdown'),
+            sessionTimer: document.getElementById('sessionTimer'),
+            resultSection: document.getElementById('resultSection'),
+            resultMeta: document.getElementById('resultMeta'),
+            summaryStats: document.getElementById('summaryStats'),
+            distBar: document.getElementById('distBar'),
+            distLabels: document.getElementById('distLabels'),
+            savedMsg: document.getElementById('savedMsg'),
+            heatmapCanvas: document.getElementById('heatmapCanvas'),
+            scanpathCanvas: document.getElementById('scanpathCanvas'),
+            focusChartCanvas: document.getElementById('focusChartCanvas'),
+        };
+
+        // ── Kalibrasi DOM ──
+        const calib = {
+            overlay: document.getElementById('calibOverlay'),
+            dot: document.getElementById('calibDot'),
+            ring: document.getElementById('calibDotRing'),
+            confirm: document.getElementById('calibConfirm'),
+            collecting: document.getElementById('calibCollecting'),
+            complete: document.getElementById('calibComplete'),
+            hint: document.getElementById('calibHint'),
+            confirmBtn: document.getElementById('calibConfirmBtn'),
+            cancelBtn: document.getElementById('calibCancelBtn'),
+            doneBtn: document.getElementById('calibDoneBtn'),
+            pointLabel: document.getElementById('calibPointLabel'),
+            collectText: document.getElementById('calibCollectText'),
+            progressFill: document.getElementById('calibProgressFill'),
+            stepText: document.getElementById('calibStepText'),
+        };
+
+        // ── Inisialisasi EyeTracker ──
+        const tracker = new EyeTracker({
+            video: els.video,
+            canvas: els.canvas,
+            mirrored: true,
+            onData: handleData,
+            onError: (msg) => {
+                els.overlayText.textContent = msg;
+                els.overlay.classList.add('show');
+                els.sessionStatusText.textContent = msg;
+            },
+            onCalibrationChange: (c) => renderCalibration(c),
+        });
+
+        let sessionRunning = false;
+        let timerInterval = null;
+
+        // ── Live data ──
+        function handleData(data) {
+            if (!sessionRunning) return;
+            els.liveScore.style.display = 'block';
+            els.liveScoreVal.textContent = data.focus_score ?? '—';
+            els.liveStatus.textContent = data.status || '—';
+            tracker.recordData(data);
+        }
+
+        // ── Status pill ──
+        function setStatus(label, color) {
+            els.statusLabel.textContent = label;
+            els.statusDot.style.background = color;
+            els.statusDot.style.boxShadow = '0 0 0 3px ' + (color === '#34d399' ? 'rgba(52,211,153,.2)' : 'rgba(184,135,58,.2)');
+        }
+
+        // ── Timer ──
+        function fmtTime(sec) {
+            const m = Math.floor(sec / 60);
+            const s = sec % 60;
+            return `${m}:${s.toString().padStart(2, '0')}`;
+        }
+
+        // ── Mulai sesi ──
+        els.startBtn.addEventListener('click', async () => {
+            if (sessionRunning) return;
+            els.resultSection.style.display = 'none';
+            els.savedMsg.style.display = 'none';
+            els.sessionStatusText.textContent = 'Memuat model AI…';
+
+            const loaded = await tracker.loadModel();
+            if (!loaded) return;
+            const camOk = await tracker.startCamera();
+            if (!camOk) return;
+
+            tracker.startSession();
+            sessionRunning = true;
+            els.startBtn.disabled = true;
+            els.stopBtn.disabled = false;
+            els.overlay.classList.remove('show');
+            els.sessionCountdown.classList.add('active');
+            setStatus('LIVE', '#34d399');
+            els.sessionStatusText.textContent = 'Sesi berjalan. Tatap layar secara alami.';
+
+            let t = 0;
+            els.sessionTimer.textContent = fmtTime(t);
+            clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                t++;
+                els.sessionTimer.textContent = fmtTime(t);
+            }, 1000);
+
+            tracker.running = true;
+            tracker.processFrame();
+        });
+
+        // ── Hentikan sesi ──
+        els.stopBtn.addEventListener('click', () => {
+            if (!sessionRunning) return;
+            finishSession();
+        });
+
+        function finishSession() {
+            sessionRunning = false;
+            clearInterval(timerInterval);
+            els.sessionCountdown.classList.remove('active');
+            els.startBtn.disabled = false;
+            els.stopBtn.disabled = true;
+            els.liveScore.style.display = 'none';
+
+            const data = tracker.stopSession();
+            tracker.stopCamera();
+
+            if (!data || data.data_points < 2) {
+                els.sessionStatusText.textContent = 'Sesi terlalu singkat — tidak ada data gaze yang valid.';
+                setStatus('OFFLINE', '#9ca3af');
+                return;
+            }
+            els.sessionStatusText.textContent = 'Sesi selesai. Memproses hasil…';
+            setStatus('SELESAI', '#b8873a');
+            renderResults(data);
+            submitResults(data);
+        }
+
+        // ── Render hasil ──
+        function renderResults(data) {
+            const dur = fmtTime(data.duration);
+            els.resultMeta.textContent = `ID ${data.session_id} · Durasi ${dur} · ${data.data_points} titik data`;
+            els.resultSection.style.display = 'block';
+
+            const sc = data.status_counts;
+            const total = data.data_points || 1;
+            const pct = (k) => Math.round(((sc[k] || 0) / total) * 100);
+
+            els.summaryStats.innerHTML = `
+                <div class="stat-chip"><span class="label">Rata-rata Fokus</span><span class="val">${data.avg_focus}%</span></div>
+                <div class="stat-chip"><span class="label">FOKUS</span><span class="val">${pct('FOKUS')}%</span></div>
+                <div class="stat-chip"><span class="label">KURANG FOKUS</span><span class="val">${pct('KURANG_FOKUS')}%</span></div>
+                <div class="stat-chip"><span class="label">TDK FOKUS</span><span class="val">${pct('TDK_FOKUS')}%</span></div>
+                <div class="stat-chip"><span class="label">MENGANTUK</span><span class="val">${pct('MENGANTUK')}%</span></div>
+                <div class="stat-chip"><span class="label">NO FACE</span><span class="val">${pct('NO_FACE')}%</span></div>
+            `;
+
+            const segs = [
+                ['FOKUS', pct('FOKUS'), '#0f8b8d'],
+                ['KURANG', pct('KURANG_FOKUS'), '#b8873a'],
+                ['TDK', pct('TDK_FOKUS'), '#ef4444'],
+                ['NGANTUK', pct('MENGANTUK'), '#a855f7'],
+            ].filter(s => s[1] > 0);
+            els.distLabels.innerHTML = segs.map(s =>
+                `<span style="display:inline-flex;align-items:center;gap:5px;"><span style="width:8px;height:8px;border-radius:50%;background:${s[2]};"></span>${s[0]} ${s[1]}%</span>`
+            ).join('');
+
+            const history = data.history;
+            setTimeout(() => {
+                EyeViz.renderHeatmap(els.heatmapCanvas, history);
+                EyeViz.renderScanpath(els.scanpathCanvas, history);
+                EyeViz.renderFocusChart(els.focusChartCanvas, history);
+            }, 30);
+        }
+
+        // ── Kirim ke server (full history terkompresi, tanpa downsampling) ──
+        async function submitResults(data) {
+            const packed = EyeViz.pack(data.history);
+            try {
+                const res = await fetch('/submit-fokus', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        session_id: data.session_id,
+                        duration: data.duration,
+                        data_points: data.data_points,
+                        avg_focus: data.avg_focus,
+                        status_counts: data.status_counts,
+                        gaze_data: packed,
+                    }),
+                });
+                const j = await res.json();
+                if (j.success) {
+                    els.savedMsg.style.display = 'block';
+                    els.sessionStatusText.textContent = 'Sesi selesai & tersimpan.';
+                } else {
+                    els.sessionStatusText.textContent = 'Sesi selesai, tetapi gagal simpan: ' + (j.error || 'unknown');
+                }
+            } catch (e) {
+                els.sessionStatusText.textContent = 'Sesi selesai, tetapi gagal menghubungi server.';
+            }
+        }
+
+        // ── Kalibrasi ──
+        els.calibBtn.addEventListener('click', () => {
+            calib.overlay.style.display = 'block';
+            calib.confirm.style.display = 'flex';
+            calib.collecting.style.display = 'none';
+            calib.complete.style.display = 'none';
+            tracker.startCalibration();
+            positionCalibPoint();
+        });
+
+        calib.cancelBtn.addEventListener('click', () => {
+            calib.overlay.style.display = 'none';
+            tracker.cancelCalibration();
+        });
+
+        calib.confirmBtn.addEventListener('click', () => {
+            tracker.confirmPoint();
+        });
+
+        calib.doneBtn.addEventListener('click', () => {
+            tracker.finishCalibration();
+            calib.overlay.style.display = 'none';
+            els.sessionStatusText.textContent = 'Kalibrasi selesai. Mulai sesi untuk merekam.';
+        });
+
+        const POINTS = [
+            { x: '8%', y: '8%', label: 'Pojok Kiri Atas' },
+            { x: '92%', y: '8%', label: 'Pojok Kanan Atas' },
+            { x: '50%', y: '50%', label: 'Tengah' },
+            { x: '8%', y: '92%', label: 'Pojok Kiri Bawah' },
+            { x: '92%', y: '92%', label: 'Pojok Kanan Bawah' },
+        ];
+
+        function positionCalibPoint() {
+            const idx = tracker.currentPointIndex;
+            const pt = POINTS[idx] || POINTS[0];
+            calib.dot.style.left = pt.x;
+            calib.dot.style.top = pt.y;
+            calib.ring.style.left = pt.x;
+            calib.ring.style.top = pt.y;
+            calib.pointLabel.textContent = pt.label;
+            // posisi tombol konfirmasi di bawah titik
+            const yNum = parseFloat(pt.y);
+            const yPos = pt.x === '50%' ? `calc(${pt.y} + 60px)` : `calc(${pt.y}${yNum > 50 ? ' - 150px' : ' + 60px'})`;
+            calib.confirm.style.left = pt.x;
+            calib.confirm.style.top = yPos;
+            calib.stepText.textContent = `${idx + 1} / 5`;
+            calib.progressFill.style.width = (idx / 5) * 100 + '%';
+        }
+
+        function renderCalibration(c) {
+            if (!c.calibrating) {
+                if (c.isComplete) {
+                    calib.confirm.style.display = 'none';
+                    calib.collecting.style.display = 'none';
+                    calib.complete.style.display = 'flex';
+                }
+                return;
+            }
+            if (c.state === 'COLLECTING') {
+                calib.confirm.style.display = 'none';
+                calib.collecting.style.display = 'flex';
+                calib.collectText.textContent = `Mengambil data… ${c.framesCollected}/${c.framesTarget}`;
+            } else {
+                calib.confirm.style.display = 'flex';
+                calib.collecting.style.display = 'none';
+                calib.confirmBtn.textContent = c.faceDetected ? 'Saya Lihat' : 'Wajah tidak terdeteksi';
+                calib.confirmBtn.disabled = !c.faceDetected;
+                positionCalibPoint();
+            }
+        }
+
+        // Format stat chips
+        const styleTag = document.createElement('style');
+        styleTag.textContent = `
+            .stat-chip { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; text-align: center; }
+            .stat-chip .label { display: block; font-size: .62rem; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin-bottom: 4px; }
+            .stat-chip .val { font-family: 'Space Grotesk', sans-serif; font-size: 1.25rem; font-weight: 700; color: var(--ink); }
+        `;
+        document.head.appendChild(styleTag);
+    </script>
 </body>
+
 </html>

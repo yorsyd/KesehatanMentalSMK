@@ -393,6 +393,46 @@ def _safe_remove(path: str):
         pass
 
 
+# ── API: Simpan Hasil Deteksi Fokus (Eye Tracking) ────────────────────────────
+@app.route('/submit-fokus', methods=['POST'])
+@siswa_required
+def submit_fokus():
+    """
+    Menerima hasil sesi eye tracking dari frontend (JSON).
+    gaze_data menyimpan seluruh riwayat gaze dalam format kompak
+    (EyeViz.pack — Float32Array base64 + bitmask), tanpa downsampling.
+    """
+    data = request.get_json(silent=True)
+    if not data:
+        return jsonify({'error': 'Body request tidak valid atau bukan JSON.'}), 400
+
+    siswa_id    = session['siswa_id']
+    gaze_data   = data.get('gaze_data')
+    session_id  = data.get('session_id', '')
+    duration    = data.get('duration', 0)
+    data_points = data.get('data_points', 0)
+    avg_focus   = data.get('avg_focus', 0)
+    status_counts = data.get('status_counts', {})
+
+    if not gaze_data or not isinstance(gaze_data, dict):
+        return jsonify({'error': 'Data gaze kosong atau tidak valid.'}), 400
+
+    try:
+        conn = get_db_connection()
+        conn.execute(
+            """INSERT INTO hasil_fokus
+               (siswa_id, session_id, duration, data_points, avg_focus, status_counts, gaze_data)
+               VALUES (?, ?, ?, ?, ?, ?, ?)""",
+            (siswa_id, session_id, duration, data_points, avg_focus,
+             json.dumps(status_counts), json.dumps(gaze_data))
+        )
+        conn.commit()
+        conn.close()
+        return jsonify({'success': True, 'message': 'Data fokus berhasil disimpan.'})
+    except Exception as e:
+        return jsonify({'error': f'Database error: {str(e)}'}), 500
+
+
 # ── Admin Dashboard ────────────────────────────────────────────────────────────
 @app.route('/admin/dashboard')
 @admin_required
@@ -410,7 +450,8 @@ def admin_dashboard():
     query = """
         SELECT s.*,
                (SELECT COUNT(*) FROM hasil_kuesioner hk WHERE hk.siswa_id = s.id) AS count_kuesioner,
-               (SELECT COUNT(*) FROM hasil_deteksi   hd WHERE hd.siswa_id = s.id) AS count_deteksi
+               (SELECT COUNT(*) FROM hasil_deteksi   hd WHERE hd.siswa_id = s.id) AS count_deteksi,
+               (SELECT COUNT(*) FROM hasil_fokus     hf WHERE hf.siswa_id = s.id) AS count_fokus
         FROM siswa s
         WHERE 1=1
     """
@@ -429,10 +470,13 @@ def admin_dashboard():
     for s in all_students:
         has_k = s['count_kuesioner'] > 0
         has_d = s['count_deteksi']   > 0
+        has_f = s['count_fokus']     > 0
 
         if status_filter == 'kuesioner' and not has_k:
             continue
         if status_filter == 'deteksi'   and not has_d:
+            continue
+        if status_filter == 'fokus'     and not has_f:
             continue
         if status_filter == 'kedua'     and not (has_k and has_d):
             continue
@@ -473,6 +517,11 @@ def admin_siswa_detail(siswa_id):
         (siswa_id,)
     ).fetchall()
 
+    fokus_rows = conn.execute(
+        'SELECT * FROM hasil_fokus WHERE siswa_id = ? ORDER BY created_at DESC',
+        (siswa_id,)
+    ).fetchall()
+
     conn.close()
 
     def safe_json(val):
@@ -509,6 +558,20 @@ def admin_siswa_detail(siswa_id):
         for r in deteksi_rows
     ]
 
+    fokus_list = [
+        {
+            'id':            r['id'],
+            'session_id':    r['session_id'],
+            'duration':      r['duration'],
+            'data_points':   r['data_points'],
+            'avg_focus':     r['avg_focus'],
+            'status_counts': safe_json(r['status_counts']),
+            'gaze_data':     safe_json(r['gaze_data']),
+            'created_at':    r['created_at'],
+        }
+        for r in fokus_rows
+    ]
+
     return jsonify({
         'status': 'success',
         'siswa': {
@@ -521,6 +584,7 @@ def admin_siswa_detail(siswa_id):
         },
         'kuesioner': kuesioner_list,   # Selalu list, minimal []
         'deteksi':   deteksi_list,     # Selalu list, minimal []
+        'fokus':     fokus_list,       # Selalu list, minimal []
     })
 
 
