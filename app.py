@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, jsonify, redirect, url_for, session, flash
 from werkzeug.security import check_password_hash
 from functools import wraps
+import mimetypes
 import cv2
 import os
 import time
@@ -8,12 +9,50 @@ import json
 from fer.fer import FER
 from database import get_db_connection, init_db
 
+# Pastikan MIME type file MediaPipe tersaji benar (WebAssembly butuh application/wasm)
+mimetypes.add_type("application/wasm", ".wasm")
+mimetypes.add_type("text/javascript", ".mjs")
+mimetypes.add_type("text/javascript", ".js")
+
 # ── Inisialisasi Aplikasi ──────────────────────────────────────────────────────
 app = Flask(__name__, static_folder='templates', static_url_path='/templates')
 app.secret_key = os.environ.get('SECRET_KEY', 'kesehatan_mental_super_secret_key_998877')
 
-# Inisialisasi model FER sekali saat startup agar tidak reload setiap request
-detector = FER(mtcnn=False)  # Ubah ke True untuk akurasi lebih tinggi (lebih lambat)
+# Inisialisasi model FER sekali saat startup agar tidak reload setiap request.
+# Gunakan Haar cascade yang di-bundle bersama proyek — OpenCV 5.x tidak lagi
+# menyertakan file haarcascade bawaan sehingga FER gagal memuatnya
+# (error: "!empty() in function 'detectMultiScale'").
+def _build_fer_detector():
+    cascade_path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                "haarcascade_frontalface_default.xml")
+    if os.path.exists(cascade_path):
+        detector = FER(mtcnn=False, cascade_file=cascade_path)
+    else:
+        # fallback ke path bawaan cv2 (OpenCV < 5)
+        detector = FER(mtcnn=False)
+    # Validasi: pastikan cascade benar-benar termuat, jika tidak cari kandidat lain
+    if getattr(detector, '_FER__face_detector', None) is not None:
+        face_detector = detector._FER__face_detector
+        if hasattr(face_detector, 'empty') and face_detector.empty():
+            for cand in (
+                os.path.join(os.path.dirname(cv2.__file__), "data", "haarcascades",
+                             "haarcascade_frontalface_default.xml"),
+                cascade_path,
+            ):
+                try:
+                    cc = cv2.CascadeClassifier(cand)
+                    if not cc.empty():
+                        detector._FER__face_detector = cc
+                        print(f"[FER] Menggunakan cascade: {cand}")
+                        break
+                except Exception:
+                    continue
+            else:
+                print("[PERINGATAN] Haar cascade wajah tidak tersedia — "
+                      "letakkan haarcascade_frontalface_default.xml di folder aplikasi.")
+    return detector
+
+detector = _build_fer_detector()
 
 
 # ── Decorator Auth ─────────────────────────────────────────────────────────────

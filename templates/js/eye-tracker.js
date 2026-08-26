@@ -12,6 +12,10 @@
 (function (global) {
   "use strict";
 
+  // ── Sumber lokal MediaPipe (tanpa CDN — tahan blokir ISP) ──
+  const MEDIAPIPE_WASM = "/templates/js/mediapipe/wasm";
+  const FACE_MODEL_PATH = "/templates/js/mediapipe/models/face_landmarker.task";
+
   // ── Indeks landmark mata (konvensi resmi MediaPipe FaceMesh) ──
   // LEFT_EYE / RIGHT_EYE = kontur penuh 16 titik (FACEMESH_LEFT_EYE / RIGHT_EYE)
   const LEFT_EYE = [263, 249, 390, 373, 374, 380, 381, 382, 466, 388, 387, 386, 385, 384, 398, 362];
@@ -725,16 +729,13 @@
     async loadModel() {
       try {
         if (!global.FilesetResolver || !global.FaceLandmarker) {
-          throw new Error("MediaPipe tidak dimuat. Periksa koneksi internet.");
+          throw new Error("Pustaka MediaPipe lokal belum termuat.");
         }
-        const vision = await global.FilesetResolver.forVisionTasks(
-          "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.18/wasm"
-        );
-        this.faceLandmarker = await global.FaceLandmarker.createFromOptions(vision, {
+        const vision = await global.FilesetResolver.forVisionTasks(MEDIAPIPE_WASM);
+        const makeOptions = (delegate) => ({
           baseOptions: {
-            modelAssetPath:
-              "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/latest/face_landmarker.task",
-            delegate: "GPU",
+            modelAssetPath: FACE_MODEL_PATH,
+            delegate,
           },
           runningMode: "VIDEO",
           numFaces: 1,
@@ -743,10 +744,24 @@
           outputFaceBlendshapes: false,
           outputFacialTransformationMatrixes: false,
         });
+        try {
+          // Coba GPU dulu (lebih cepat)
+          this.faceLandmarker = await global.FaceLandmarker.createFromOptions(vision, makeOptions("GPU"));
+        } catch (gpuErr) {
+          console.warn("[EyeTracker] GPU delegate gagal, mencoba CPU:", gpuErr && gpuErr.message);
+          try {
+            // Fallback ke CPU jika GPU/WebGL gagal di perangkat ini
+            this.faceLandmarker = await global.FaceLandmarker.createFromOptions(vision, makeOptions("CPU"));
+          } catch (cpuErr) {
+            throw cpuErr;
+          }
+        }
         this.modelLoaded = true;
         return true;
       } catch (e) {
-        if (this.onError) this.onError("Gagal memuat model AI. Periksa koneksi internet.");
+        console.error("[EyeTracker] loadModel gagal:", e);
+        const detail = e && e.message ? " (" + e.message + ")" : "";
+        if (this.onError) this.onError("Gagal memuat model AI" + detail);
         return false;
       }
     }
@@ -847,6 +862,7 @@
       if (video.readyState >= 2) {
         try {
           const result = this.faceLandmarker.detectForVideo(video, performance.now());
+          this._errorCount = 0;
           if (result.faceLandmarks && result.faceLandmarks.length > 0) {
             const landmarks = result.faceLandmarks[0];
             if (this.canvas) this.drawLandmarks(landmarks, vw, vh);
@@ -885,7 +901,16 @@
             }
           }
         } catch (e) {
-          /* silent */
+          // Laporkan error berulang (mis. konteks GPU hilang) — jangan senyap
+          this._errorCount = (this._errorCount || 0) + 1;
+          if (this._errorCount === 5 && this.onError) {
+            this.onError("Pelacakan terhenti: " + (e && e.message ? e.message : "error deteksi wajah."));
+          }
+          if (this._errorCount >= 30) {
+            this.running = false;
+            if (this.onError) this.onError("Eye tracking dihentikan karena error berulang.");
+            return;
+          }
         }
       }
       this.animFrame = requestAnimationFrame(() => this.processFrame());

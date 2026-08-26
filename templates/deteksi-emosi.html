@@ -11,10 +11,9 @@
         href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=3">
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.18/vision_bundle.js"
-        crossorigin="anonymous"></script>
-    <script src="{{ url_for('static', filename='js/eye-viz.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/eye-tracker.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/mediapipe/loader.js') }}?v=2"></script>
+    <script src="{{ url_for('static', filename='js/eye-viz.js') }}?v=2"></script>
+    <script src="{{ url_for('static', filename='js/eye-tracker.js') }}?v=2"></script>
 </head>
 
 <body>
@@ -253,16 +252,51 @@
             // Muat model eye tracking & mulai sesi bersamaan
             eyeEls.wrap.style.display = 'block';
             eyeEls.statusPill.style.display = 'inline-flex';
+
+            // Pastikan video benar-benar bermain sebelum diproses MediaPipe
+            try {
+                if (eyeEls.video.srcObject) await eyeEls.video.play();
+            } catch (e) { /* beberapa browser butuh interaksi — klik tombol sudah cukup */ }
+
+            // Cek pustaka MediaPipe lokal sudah termuat (dynamic import = async)
+            if (!window.FilesetResolver || !window.FaceLandmarker) {
+                const t0 = Date.now();
+                while (!(window.FilesetResolver && window.FaceLandmarker) && Date.now() - t0 < 5000) {
+                    await new Promise(r => setTimeout(r, 100));
+                }
+            }
+            if (!window.FilesetResolver || !window.FaceLandmarker) {
+                eyeEls.statusText.textContent = 'Eye tracking tidak aktif: pustaka MediaPipe lokal gagal dimuat.';
+                console.error('[DeteksiEmosi] window.FilesetResolver =', !!window.FilesetResolver,
+                    '| window.FaceLandmarker =', !!window.FaceLandmarker);
+            }
+
             eyeEls.statusText.textContent = 'Memuat model AI…';
             const loaded = await tracker.loadModel();
             if (!loaded) {
-                eyeEls.statusText.textContent = 'Eye tracking tidak aktif (model gagal dimuat).';
+                // onError sudah menampilkan penyebab asli kegagalan
+                if (!eyeEls.statusText.textContent.includes('Gagal')) {
+                    eyeEls.statusText.textContent = 'Eye tracking tidak aktif: model gagal dimuat.';
+                }
+                console.error('[DeteksiEmosi] Model tidak termuat, tracking dilewati.');
             }
             tracker.startSession();
             eyeSessionData = tracker.getSessionData(); // marker agar handleEyeData aktif
             if (tracker.modelLoaded) {
                 tracker.running = true;
-                tracker.processFrame();
+                tracker._errorCount = 0;
+                // Tunggu frame video siap sebelum memproses (maks 3 dtk)
+                const t0 = Date.now();
+                while (eyeEls.video.readyState < 2 && Date.now() - t0 < 3000) {
+                    await new Promise(r => setTimeout(r, 100));
+                }
+                if (eyeEls.video.videoWidth === 0) {
+                    eyeEls.statusText.textContent = 'Eye tracking tidak aktif: video kamera belum siap.';
+                    console.error('[DeteksiEmosi] videoWidth=0, readyState=', eyeEls.video.readyState);
+                } else {
+                    tracker.processFrame();
+                    eyeEls.statusText.textContent = 'Eye tracking aktif';
+                }
             }
 
             recordedChunks = [];
