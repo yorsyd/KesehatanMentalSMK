@@ -10,18 +10,23 @@
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg: #0d1117;
-      --panel: rgba(255,255,255,0.04);
-      --border: rgba(255,255,255,0.10);
-      --border-teal: rgba(15,139,141,0.5);
-      --ink: #e2e8f0;
-      --ink-soft: #94a3b8;
+      --bg: #eef1f4;
+      --panel: #ffffff;
+      --border: #d7dee4;
+      --border-teal: rgba(15, 139, 141, 0.3);
+      --ink: #16232f;
+      --ink-soft: #5b6b7a;
       --teal: #0f8b8d;
-      --teal-glow: rgba(15,139,141,0.25);
-      --teal-soft: rgba(15,139,141,0.12);
-      --danger: #f43f5e;
-      --success: #10b981;
-      --warning: #f59e0b;
+      --teal-dark: #095454;
+      --teal-glow: rgba(15, 139, 141, 0.15);
+      --teal-soft: #e2f2f2;
+      --amber: #b8873a;
+      --amber-dark: #a8782d;
+      --violet: #4a4fd6;
+      --danger: #dc2626;
+      --success: #166534;
+      --warning: #b8873a;
+      --shadow-panel: 0 12px 32px rgba(22, 35, 47, 0.08);
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -40,18 +45,18 @@
       content: '';
       position: fixed; inset: 0;
       background-image:
-        linear-gradient(rgba(15,139,141,0.04) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(15,139,141,0.04) 1px, transparent 1px);
+        linear-gradient(rgba(15,139,141,0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(15,139,141,0.05) 1px, transparent 1px);
       background-size: 48px 48px;
       pointer-events: none;
     }
 
     .blob {
       position: fixed; border-radius: 50%;
-      filter: blur(120px); pointer-events: none; opacity: 0.3;
+      filter: blur(120px); pointer-events: none; opacity: 0.2;
     }
-    .blob-1 { width: 500px; height: 500px; background: #0f8b8d; top: -150px; left: -100px; }
-    .blob-2 { width: 300px; height: 300px; background: #4a4fd6; bottom: -80px; right: -80px; }
+    .blob-1 { width: 500px; height: 500px; background: var(--teal); top: -150px; left: -100px; }
+    .blob-2 { width: 300px; height: 300px; background: var(--violet); bottom: -80px; right: -80px; }
 
     .register-card {
       position: relative; z-index: 1;
@@ -59,6 +64,7 @@
       background: var(--panel);
       border: 1px solid var(--border);
       border-radius: 20px;
+      box-shadow: var(--shadow-panel);
       backdrop-filter: blur(16px);
       overflow: hidden;
     }
@@ -102,7 +108,7 @@
       display: flex; align-items: center; justify-content: center;
       font-weight: 700; font-size: 0.7rem;
       background: var(--teal-soft); border: 1px solid var(--border-teal);
-      color: #5eead4;
+      color: var(--teal-dark);
     }
     .step.done .step-num { background: var(--teal); color: #fff; border-color: var(--teal); }
     .step-line { flex: 1; height: 1px; background: var(--border); max-width: 24px; }
@@ -114,9 +120,9 @@
       margin-bottom: 8px; display: flex; align-items: flex-start; gap: 10px; line-height: 1.4;
     }
     .flash svg { flex-shrink: 0; margin-top: 1px; }
-    .flash.danger  { background: rgba(244,63,94,0.12);  border: 1px solid rgba(244,63,94,0.3);  color: #fda4af; }
-    .flash.warning { background: rgba(245,158,11,0.12); border: 1px solid rgba(245,158,11,0.3); color: #fcd34d; }
-    .flash.success { background: rgba(16,185,129,0.12); border: 1px solid rgba(16,185,129,0.3); color: #6ee7b7; }
+    .flash.danger  { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; }
+    .flash.warning { background: #fffbeb; border: 1px solid #fde68a; color: #92400e; }
+    .flash.success { background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; }
 
     /* Form */
     .card-body { padding: 24px 32px 32px; }
@@ -130,19 +136,19 @@
       letter-spacing: 0.05em; text-transform: uppercase;
       color: var(--ink-soft); margin-bottom: 7px;
     }
-    .req { color: #f43f5e; margin-left: 2px; }
+    .req { color: var(--danger); margin-left: 2px; }
 
     .input-wrap { position: relative; }
     .input-icon {
       position: absolute; left: 13px; top: 50%; transform: translateY(-50%);
-      color: #4b5563; pointer-events: none;
+      color: #64748b; pointer-events: none;
     }
     .input-icon svg { width: 15px; height: 15px; }
 
     input, select {
       width: 100%;
       padding: 11px 14px 11px 40px;
-      background: rgba(255,255,255,0.05);
+      background: #ffffff;
       border: 1px solid var(--border);
       border-radius: 10px;
       color: var(--ink);
@@ -152,20 +158,19 @@
       transition: border-color 0.2s, box-shadow 0.2s;
       appearance: none;
     }
-    input::placeholder { color: #4b5563; }
+    input::placeholder { color: #94a3b8; }
     input:focus, select:focus {
       border-color: var(--teal);
       box-shadow: 0 0 0 3px var(--teal-glow);
     }
     input:valid:not(:placeholder-shown) {
-      border-color: rgba(16,185,129,0.5);
+      border-color: #10b981;
     }
     select { padding-right: 36px; cursor: pointer; }
-    select option { background: #1a2233; }
 
     .select-arrow {
       position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
-      pointer-events: none; color: #4b5563;
+      pointer-events: none; color: #64748b;
     }
     .select-arrow svg { width: 14px; height: 14px; }
 
@@ -176,7 +181,7 @@
       border: 1px solid var(--border-teal);
       border-radius: 10px;
       font-size: 0.78rem;
-      color: #5eead4;
+      color: var(--teal-dark);
       line-height: 1.5;
       display: flex; gap: 10px; align-items: flex-start;
     }
@@ -196,9 +201,9 @@
       margin-top: 16px;
     }
     .btn-register:hover {
-      background: #0a9ea0;
+      background: var(--teal-dark);
       transform: translateY(-1px);
-      box-shadow: 0 8px 24px var(--teal-glow);
+      box-shadow: 0 8px 20px var(--teal-glow);
     }
     .btn-register:active { transform: translateY(0); }
     .btn-register:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
@@ -214,7 +219,7 @@
       text-decoration: none;
       display: inline-flex; align-items: center; gap: 6px;
     }
-    .card-footer a:hover { text-decoration: underline; }
+    .card-footer a:hover { color: var(--teal-dark); text-decoration: underline; }
     .card-footer a svg { width: 14px; height: 14px; }
 
     @media (max-width: 480px) {
@@ -327,7 +332,7 @@
                 <option>Akuntansi</option>
                 <option>Administrasi Perkantoran</option>
                 <option>Pemasaran</option>
-                <option>Lainnya</option>
+                <option value="Lainnya">Lainnya</option>
               </select>
               <span class="select-arrow">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
@@ -335,6 +340,18 @@
                 </svg>
               </span>
             </div>
+          </div>
+        </div>
+
+        <div class="form-group" id="group_jurusan_lainnya" style="display: none; margin-bottom: 16px;">
+          <label for="jurusan_lainnya">Nama Jurusan Anda <span class="req">*</span></label>
+          <div class="input-wrap">
+            <span class="input-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+              </svg>
+            </span>
+            <input type="text" id="jurusan_lainnya" name="jurusan_lainnya" placeholder="Tuliskan nama jurusan Anda">
           </div>
         </div>
 
@@ -382,37 +399,64 @@
   </div>
 
   <script>
-    // Client-side validation + prevent double-submit
-    document.getElementById('registerForm').addEventListener('submit', function(e) {
-      const nama    = document.getElementById('nama').value.trim();
-      const kelas   = document.getElementById('kelas').value.trim();
-      const jurusan = document.getElementById('jurusan').value;
-      const sekolah = document.getElementById('sekolah').value.trim();
+    document.addEventListener('DOMContentLoaded', function() {
+      const selectJurusan = document.getElementById('jurusan');
+      const groupJurusanLainnya = document.getElementById('group_jurusan_lainnya');
+      const inputJurusanLainnya = document.getElementById('jurusan_lainnya');
 
-      if (!nama || !kelas || !jurusan || !sekolah) {
-        e.preventDefault();
-        // Highlight empty fields
-        [['nama', nama], ['kelas', kelas], ['sekolah', sekolah]].forEach(([id, val]) => {
-          const el = document.getElementById(id);
-          if (!val) {
-            el.style.borderColor = '#f43f5e';
-            el.addEventListener('input', () => el.style.borderColor = '', { once: true });
+      if (selectJurusan && groupJurusanLainnya && inputJurusanLainnya) {
+        selectJurusan.addEventListener('change', function() {
+          if (this.value === 'Lainnya') {
+            groupJurusanLainnya.style.display = 'block';
+            inputJurusanLainnya.required = true;
+            inputJurusanLainnya.focus();
+          } else {
+            groupJurusanLainnya.style.display = 'none';
+            inputJurusanLainnya.required = false;
+            inputJurusanLainnya.value = '';
           }
         });
-        return;
       }
 
-      const btn = document.getElementById('btnRegister');
-      btn.disabled = true;
-      btn.innerHTML = `
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
-          <circle cx="12" cy="12" r="10" stroke-opacity="0.3"/>
-          <path d="M12 2a10 10 0 0 1 10 10" stroke-linecap="round">
-            <animateTransform attributeName="transform" type="rotate" from="0 12 12" to="360 12 12" dur="0.8s" repeatCount="indefinite"/>
-          </path>
-        </svg>
-        Memproses...
-      `;
+      // Client-side validation + prevent double-submit
+      document.getElementById('registerForm').addEventListener('submit', function(e) {
+        const nama    = document.getElementById('nama').value.trim();
+        const kelas   = document.getElementById('kelas').value.trim();
+        const jurusan = document.getElementById('jurusan').value;
+        const jurusanLainnya = inputJurusanLainnya ? inputJurusanLainnya.value.trim() : '';
+        const sekolah = document.getElementById('sekolah').value.trim();
+
+        const isJurusanValid = jurusan === 'Lainnya' ? !!jurusanLainnya : !!jurusan;
+
+        if (!nama || !kelas || !isJurusanValid || !sekolah) {
+          e.preventDefault();
+          // Highlight empty fields
+          [['nama', nama], ['kelas', kelas], ['sekolah', sekolah]].forEach(([id, val]) => {
+            const el = document.getElementById(id);
+            if (!val) {
+              el.style.borderColor = '#f43f5e';
+              el.addEventListener('input', () => el.style.borderColor = '', { once: true });
+            }
+          });
+          if (jurusan === 'Lainnya' && !jurusanLainnya && inputJurusanLainnya) {
+            inputJurusanLainnya.style.borderColor = '#f43f5e';
+            inputJurusanLainnya.addEventListener('input', () => inputJurusanLainnya.style.borderColor = '', { once: true });
+          }
+          return;
+        }
+
+        const btn = document.getElementById('btnRegister');
+        btn.disabled = true;
+        btn.innerHTML = `
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+            <circle cx="12" cy="12" r="10" stroke-opacity="0.3"/>
+            <path d="M12 2a10 10 0 0 1 10 10" stroke-linecap="round">
+              <animateTransform attributeName="transform" type="rotate" from="0 12 12" to="360 12 12" dur="0.8s" repeatCount="indefinite"/>
+            </path>
+          </svg>
+          Memproses...
+        `;
+      });
     });
   </script>
 </body>

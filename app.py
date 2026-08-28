@@ -68,6 +68,10 @@ def siswa_register():
         nama    = request.form.get('nama', '').strip()
         kelas   = request.form.get('kelas', '').strip()
         jurusan = request.form.get('jurusan', '').strip()
+        if jurusan == 'Lainnya':
+            jurusan_lainnya = request.form.get('jurusan_lainnya', '').strip()
+            if jurusan_lainnya:
+                jurusan = jurusan_lainnya
         sekolah = request.form.get('sekolah', '').strip()
 
         if not (nama and kelas and jurusan and sekolah):
