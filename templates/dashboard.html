@@ -234,6 +234,16 @@
       color: var(--ink); margin: 0; flex: 1;
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
+    .modal-pdf {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 8px 12px; border: 1px solid var(--teal);
+      border-radius: 8px; background: var(--teal); color: #fff;
+      font: 600 .78rem 'IBM Plex Sans', sans-serif;
+      cursor: pointer; flex-shrink: 0;
+    }
+    .modal-pdf:hover { background: var(--teal-dark); }
+    .modal-pdf:disabled { opacity: .45; cursor: wait; }
+    .modal-pdf svg { width: 15px; height: 15px; }
     .modal-close {
       width: 32px; height: 32px; border-radius: 50%;
       border: 1px solid var(--line); background: none;
@@ -631,6 +641,14 @@
 
       <div class="modal-header">
         <h2 class="modal-title" id="modalStudentName">Detail Asesmen</h2>
+        <button class="modal-pdf" onclick="downloadStudentPdf()" id="modalPdfBtn" disabled title="Simpan hasil siswa ke PDF">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <path d="M12 18v-6M9 15l3 3 3-3"/>
+          </svg>
+          Simpan PDF
+        </button>
         <button class="modal-close" onclick="closeModal()" id="modalCloseBtn" aria-label="Tutup modal">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
             <line x1="18" y1="6" x2="6" y2="18"/>
@@ -791,6 +809,9 @@
       document.getElementById('kuesionerContent').innerHTML = '';
       document.getElementById('deteksiContent').innerHTML   = '';
       document.getElementById('fokusContent').innerHTML     = '';
+      const pdfButton = document.getElementById('modalPdfBtn');
+      pdfButton.disabled = true;
+      pdfButton.dataset.siswaId = siswaId;
 
       // Stop video jika ada yang sedang diputar
       document.querySelectorAll('#deteksiContent video').forEach(v => {
@@ -815,6 +836,7 @@
             }
 
             currentStudentData = data;
+            pdfButton.disabled = false;
 
             // Populate profil
             const s = data.siswa || {};
@@ -846,6 +868,11 @@
           alert('Gagal mengambil data dari server. Periksa koneksi Anda.');
           closeModal();
         });
+    }
+
+    function downloadStudentPdf() {
+      const siswaId = document.getElementById('modalPdfBtn').dataset.siswaId;
+      if (siswaId) window.location.href = `/admin/siswa/${siswaId}/pdf`;
     }
 
     // ── Tutup modal ─────────────────────────────────────────────────────────

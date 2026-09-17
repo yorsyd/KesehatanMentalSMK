@@ -211,6 +211,9 @@
             },
         });
 
+        // Mulai memuat model saat halaman siap agar klik sesi tidak menunggu model.
+        tracker.loadModel();
+
         function handleEyeData(data) {
             if (!eyeSessionData) return;
             tracker.recordData(data);
@@ -257,19 +260,6 @@
             try {
                 if (eyeEls.video.srcObject) await eyeEls.video.play();
             } catch (e) { /* beberapa browser butuh interaksi — klik tombol sudah cukup */ }
-
-            // Cek pustaka MediaPipe lokal sudah termuat (dynamic import = async)
-            if (!window.FilesetResolver || !window.FaceLandmarker) {
-                const t0 = Date.now();
-                while (!(window.FilesetResolver && window.FaceLandmarker) && Date.now() - t0 < 5000) {
-                    await new Promise(r => setTimeout(r, 100));
-                }
-            }
-            if (!window.FilesetResolver || !window.FaceLandmarker) {
-                eyeEls.statusText.textContent = 'Eye tracking tidak aktif: pustaka MediaPipe lokal gagal dimuat.';
-                console.error('[DeteksiEmosi] window.FilesetResolver =', !!window.FilesetResolver,
-                    '| window.FaceLandmarker =', !!window.FaceLandmarker);
-            }
 
             eyeEls.statusText.textContent = 'Memuat model AI…';
             const loaded = await tracker.loadModel();
@@ -382,39 +372,48 @@
             resultStatus.innerText = 'Mengirim data ke server…';
 
             try {
-                // 1) Video → analisis emosi
-                const response = await fetch('/analyze', {
+                // Jalankan dua penyimpanan secara paralel agar waktu tunggu tidak
+                // menjadi jumlah waktu analisis emosi + simpan fokus.
+                const emotionRequest = fetch('/analyze', {
                     method: 'POST',
                     body: formData
-                });
-                const data = await response.json();
+                }).then(async (response) => ({
+                    response,
+                    data: await response.json(),
+                }));
+
+                const focusRequest = fokusData && fokusData.data_points > 1
+                    ? (async () => {
+                    const packed = EyeViz.pack(fokusData.history);
+                    const fres = await fetch('/submit-fokus', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            session_id: fokusData.session_id,
+                            duration: fokusData.duration,
+                            data_points: fokusData.data_points,
+                            avg_focus: fokusData.avg_focus,
+                            status_counts: fokusData.status_counts,
+                            gaze_data: packed,
+                        }),
+                    });
+                    return { response: fres, data: await fres.json() };
+                })()
+                    : Promise.resolve(null);
+
+                const [{ response, data }, focusResult] = await Promise.all([
+                    emotionRequest,
+                    focusRequest,
+                ]);
                 if (!response.ok) {
                     resultStatus.innerText = data.error || 'Terjadi kesalahan saat memproses video.';
                 } else {
                     resultStatus.innerText = '✓ Video dianalisis.';
                 }
-
-                // 2) Data fokus → simpan (full history terkompresi)
-                if (fokusData && fokusData.data_points > 1) {
-                    const packed = EyeViz.pack(fokusData.history);
-                    try {
-                        const fres = await fetch('/submit-fokus', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                session_id: fokusData.session_id,
-                                duration: fokusData.duration,
-                                data_points: fokusData.data_points,
-                                avg_focus: fokusData.avg_focus,
-                                status_counts: fokusData.status_counts,
-                                gaze_data: packed,
-                            }),
-                        });
-                        const fj = await fres.json();
-                        resultStatus.innerText = (resultStatus.innerText || '') + (fj.success ? ' ✓ Data fokus tersimpan.' : ' Gagal simpan fokus: ' + (fj.error || ''));
-                    } catch (e) {
-                        resultStatus.innerText += ' Gagal menghubungi server untuk data fokus.';
-                    }
+                if (focusResult) {
+                    resultStatus.innerText += focusResult.data.success
+                        ? ' ✓ Data fokus tersimpan.'
+                        : ' Gagal simpan fokus: ' + (focusResult.data.error || '');
                 } else {
                     resultStatus.innerText += ' (Data fokus tidak cukup — dilewati)';
                 }

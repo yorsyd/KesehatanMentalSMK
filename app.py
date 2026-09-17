@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify, redirect, url_for, session, flash
+from flask import Flask, render_template, request, jsonify, redirect, url_for, session, flash, send_file
 from werkzeug.security import check_password_hash
 from functools import wraps
 import mimetypes
@@ -6,8 +6,20 @@ import cv2
 import os
 import time
 import json
+import html
+import logging
+import re
+import math
+from io import BytesIO
 from fer.fer import FER
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.units import mm
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
 from database import get_db_connection, init_db
+
+logger = logging.getLogger(__name__)
 
 # Pastikan MIME type file MediaPipe tersaji benar (WebAssembly butuh application/wasm)
 mimetypes.add_type("application/wasm", ".wasm")
@@ -338,43 +350,33 @@ def analyze_video():
         _safe_remove(save_path)
         return jsonify({'error': 'File video kosong atau gagal disimpan.'}), 400
 
-    # ── Hitung total frame (grab-only, tanpa decode penuh) ────────────────────
+    # ── Baca video satu kali dan ambil sampel yang tersebar ───────────────────
     cap = cv2.VideoCapture(save_path)
     if not cap.isOpened():
         _safe_remove(save_path)
         return jsonify({'error': 'Format video tidak didukung atau file corrupt.'}), 400
 
-    total_frames = 0
-    while cap.isOpened():
-        ret = cap.grab()
-        if not ret:
-            break
-        total_frames += 1
-    cap.release()
+    # Metadata frame menghindari lintasan grab() kedua yang sebelumnya hanya
+    # digunakan untuk menghitung jumlah frame.
+    total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT) or 0)
+    if total_frames <= 0:
+        fps = cap.get(cv2.CAP_PROP_FPS) or 0
+        duration_hint = cap.get(cv2.CAP_PROP_POS_MSEC) / 1000
+        total_frames = int(fps * duration_hint) if fps > 0 and duration_hint > 0 else 0
 
-    if total_frames == 0:
-        _safe_remove(save_path)
-        return jsonify({'error': 'Video tidak memiliki frame yang valid.'}), 400
-
-    # ── Sampling frame (target ≤100 frame) ────────────────────────────────────
-    target_samples = 100
-    step = max(1, total_frames // target_samples)
-
-    cap = cv2.VideoCapture(save_path)
+    target_samples = 60
+    step = max(1, math.ceil(total_frames / target_samples)) if total_frames else 3
     sampled, frame_idx = [], 0
 
     while cap.isOpened():
+        ret, frame = cap.read()
+        if not ret:
+            break
         if frame_idx % step == 0 and len(sampled) < target_samples:
-            ret, frame = cap.read()
-            if not ret:
-                break
             h, w = frame.shape[:2]
             if w > 400:
                 frame = cv2.resize(frame, (400, int(h * 400 / w)))
             sampled.append(frame)
-        else:
-            if not cap.grab():
-                break
         frame_idx += 1
 
     cap.release()
@@ -632,6 +634,159 @@ def admin_siswa_detail(siswa_id):
         'deteksi':   deteksi_list,     # Selalu list, minimal []
         'fokus':     fokus_list,       # Selalu list, minimal []
     })
+
+
+@app.route('/admin/siswa/<int:siswa_id>/pdf')
+@admin_required
+def admin_siswa_pdf(siswa_id):
+    """Buat PDF ringkasan seluruh hasil asesmen siswa yang dipilih."""
+    conn = get_db_connection()
+    try:
+        siswa = conn.execute('SELECT * FROM siswa WHERE id = ?', (siswa_id,)).fetchone()
+        admin_school = session.get('admin_school')
+        if not siswa or (admin_school and siswa['sekolah'] != admin_school):
+            return jsonify({'error': 'Siswa tidak ditemukan.'}), 404
+
+        kuesioner_rows = conn.execute(
+            'SELECT * FROM hasil_kuesioner WHERE siswa_id = ? ORDER BY created_at DESC',
+            (siswa_id,)
+        ).fetchall()
+        deteksi_rows = conn.execute(
+            'SELECT * FROM hasil_deteksi WHERE siswa_id = ? ORDER BY created_at DESC',
+            (siswa_id,)
+        ).fetchall()
+        fokus_rows = conn.execute(
+            'SELECT * FROM hasil_fokus WHERE siswa_id = ? ORDER BY created_at DESC',
+            (siswa_id,)
+        ).fetchall()
+    finally:
+        conn.close()
+
+    def parse_json(value):
+        try:
+            return json.loads(value) if value else {}
+        except (json.JSONDecodeError, TypeError):
+            return {}
+
+    def value_text(value):
+        return str(value) if value not in (None, '') else '-'
+
+    def markup_text(value):
+        """Escape data database sebelum dimasukkan ke Paragraph ReportLab."""
+        return html.escape(value_text(value), quote=False)
+
+    def number_text(value, suffix=''):
+        try:
+            return f'{float(value):.1f}{suffix}'
+        except (TypeError, ValueError):
+            return '-'
+
+    styles = getSampleStyleSheet()
+    body = ParagraphStyle('PdfBody', parent=styles['BodyText'], fontSize=8, leading=10)
+    heading = ParagraphStyle('PdfHeading', parent=styles['Heading2'], fontSize=11,
+                             leading=14, textColor=colors.HexColor('#0f6264'),
+                             spaceBefore=10, spaceAfter=5)
+    title = ParagraphStyle('PdfTitle', parent=styles['Title'], fontSize=16,
+                           leading=20, alignment=1, spaceAfter=4)
+
+    def cell(value):
+        return Paragraph(markup_text(value), body)
+
+    def make_table(rows, widths):
+        table = Table(rows, colWidths=widths, repeatRows=1)
+        table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#0f6264')),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, -1), 7.5),
+            ('GRID', (0, 0), (-1, -1), 0.3, colors.HexColor('#ccd9da')),
+            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f5f8f8')]),
+            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+            ('TOPPADDING', (0, 0), (-1, -1), 5),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
+        ]))
+        return table
+
+    story = [Paragraph('Laporan Hasil Asesmen Siswa', title),
+             Paragraph(markup_text(siswa['nama']), body), Spacer(1, 8)]
+    profile = [
+        ['Nama', value_text(siswa['nama'])],
+        ['Kelas / Jurusan', f"{value_text(siswa['kelas'])} / {value_text(siswa['jurusan'])}"],
+        ['Sekolah', value_text(siswa['sekolah'])],
+        ['Terdaftar', value_text(siswa['created_at'])],
+    ]
+    profile_table = Table(profile, colWidths=[42 * mm, 133 * mm])
+    profile_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (0, -1), colors.HexColor('#eef5f5')),
+        ('GRID', (0, 0), (-1, -1), 0.3, colors.HexColor('#ccd9da')),
+        ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, -1), 8),
+        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+        ('TOPPADDING', (0, 0), (-1, -1), 5),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
+    ]))
+    story.append(profile_table)
+
+    story.append(Paragraph('Hasil Kuesioner', heading))
+    if kuesioner_rows:
+        rows = [['Tanggal', 'Jenis', 'Label', 'Skor / Rincian', 'Kategori']]
+        for row in kuesioner_rows:
+            scores = parse_json(row['scores'])
+            score_text = ', '.join(
+                f'{key.title()}: {value_text(value)}' for key, value in scores.items()
+            )
+            if row['kuesioner_type'] != 'dass21':
+                score_text = value_text(row['total'])
+            rows.append([cell(row['created_at']), cell(row['kuesioner_type']),
+                          cell(row['label']), cell(score_text), cell(row['category'])])
+        story.append(make_table(rows, [28 * mm, 25 * mm, 35 * mm, 52 * mm, 35 * mm]))
+    else:
+        story.append(Paragraph('Belum ada data kuesioner.', body))
+
+    story.append(Paragraph('Hasil Deteksi Emosi', heading))
+    if deteksi_rows:
+        rows = [['Tanggal', 'Emosi Dominan', 'Persentase Emosi']]
+        for row in deteksi_rows:
+            emotions = parse_json(row['emotion_data'])
+            numeric_emotions = []
+            for key, amount in emotions.items():
+                try:
+                    numeric_emotions.append((key, float(amount)))
+                except (TypeError, ValueError):
+                    continue
+            numeric_emotions.sort(key=lambda item: item[1], reverse=True)
+            emotion_text = ', '.join(
+                f'{key.title()}: {amount:.1f}%' for key, amount in numeric_emotions
+            ) or '-'
+            rows.append([cell(row['created_at']), cell(row['dominant_emotion']), cell(emotion_text)])
+        story.append(make_table(rows, [38 * mm, 38 * mm, 99 * mm]))
+    else:
+        story.append(Paragraph('Belum ada data deteksi emosi.', body))
+
+    story.append(Paragraph('Hasil Deteksi Fokus', heading))
+    if fokus_rows:
+        rows = [['Tanggal', 'Durasi', 'Jumlah Data', 'Rata-rata Fokus', 'Status Fokus']]
+        for row in fokus_rows:
+            statuses = parse_json(row['status_counts'])
+            status_text = ', '.join(f'{key}: {amount}' for key, amount in statuses.items())
+            rows.append([cell(row['created_at']), cell(f"{value_text(row['duration'])} detik"),
+                         cell(row['data_points']), cell(number_text(row['avg_focus'], '%')), cell(status_text)])
+        story.append(make_table(rows, [38 * mm, 28 * mm, 27 * mm, 32 * mm, 50 * mm]))
+    else:
+        story.append(Paragraph('Belum ada data deteksi fokus.', body))
+
+    output = BytesIO()
+    try:
+        SimpleDocTemplate(output, pagesize=A4, rightMargin=15 * mm, leftMargin=15 * mm,
+                          topMargin=15 * mm, bottomMargin=15 * mm).build(story)
+    except Exception:
+        logger.exception('Gagal membuat PDF siswa_id=%s', siswa_id)
+        return jsonify({'error': 'PDF gagal dibuat. Periksa log server untuk detailnya.'}), 500
+    output.seek(0)
+    safe_name = re.sub(r'[^A-Za-z0-9._-]+', '-', value_text(siswa['nama'])).strip('-._') or 'siswa'
+    filename = f"laporan-asesmen-{safe_name}.pdf"
+    return send_file(output, as_attachment=True, download_name=filename,
+                     mimetype='application/pdf')
 
 
 # ── Admin API: Hapus Siswa ────────────────────────────────────────────────────

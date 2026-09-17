@@ -692,6 +692,7 @@
       this.tempCtx = this.tempCanvas.getContext("2d");
 
       this.modelLoaded = false;
+      this.modelLoadPromise = null;
       this.running = false;
       this.lastEmitTime = 0;
 
@@ -727,9 +728,27 @@
 
     // ── Model MediaPipe ──
     async loadModel() {
+      if (this.modelLoaded) return true;
+      if (this.modelLoadPromise) return this.modelLoadPromise;
+
+      this.modelLoadPromise = this._loadModel();
+      return this.modelLoadPromise;
+    }
+
+    async _loadModel() {
       try {
         if (!global.FilesetResolver || !global.FaceLandmarker) {
-          throw new Error("Pustaka MediaPipe lokal belum termuat.");
+          await new Promise((resolve, reject) => {
+            const onReady = () => {
+              clearTimeout(timeout);
+              resolve();
+            };
+            const timeout = setTimeout(() => {
+              global.removeEventListener("mediapipe-ready", onReady);
+              reject(new Error("Pustaka MediaPipe lokal belum termuat."));
+            }, 10000);
+            global.addEventListener("mediapipe-ready", onReady, { once: true });
+          });
         }
         const vision = await global.FilesetResolver.forVisionTasks(MEDIAPIPE_WASM);
         const makeOptions = (delegate) => ({
@@ -763,6 +782,8 @@
         const detail = e && e.message ? " (" + e.message + ")" : "";
         if (this.onError) this.onError("Gagal memuat model AI" + detail);
         return false;
+      } finally {
+        if (!this.modelLoaded) this.modelLoadPromise = null;
       }
     }
 

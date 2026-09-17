@@ -290,6 +290,9 @@
             onCalibrationChange: (c) => renderCalibration(c),
         });
 
+        // Mulai memuat model saat halaman siap agar klik sesi tidak menunggu model.
+        tracker.loadModel();
+
         let sessionRunning = false;
         let timerInterval = null;
 
