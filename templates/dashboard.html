@@ -441,7 +441,11 @@
         <div class="eyebrow">Admin Dashboard</div>
         <h1 style="font-size: 1.9rem; margin-bottom: 6px;">Data Asesmen Siswa</h1>
         <p class="lede" style="font-size: 0.9rem;">
-          Kelola dan pantau hasil asesmen psikologis seluruh siswa yang terdaftar.
+          {% if session.get('admin_school') %}
+            Kelola dan pantau hasil asesmen siswa {{ session.get('admin_school') }}.
+          {% else %}
+            Kelola dan pantau hasil asesmen seluruh siswa yang terdaftar.
+          {% endif %}
         </p>
       </div>
 

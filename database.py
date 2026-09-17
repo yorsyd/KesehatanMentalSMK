@@ -7,8 +7,9 @@ DATABASE_PATH = os.path.join(os.path.dirname(__file__), 'mental_health.db')
 
 def get_db_connection():
     """Buka koneksi SQLite dengan row_factory agar hasil query bisa diakses seperti dict."""
-    conn = sqlite3.connect(DATABASE_PATH)
+    conn = sqlite3.connect(DATABASE_PATH, timeout=30)
     conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA busy_timeout=30000")
     # WAL mode: lebih aman untuk multi-request bersamaan
     conn.execute("PRAGMA journal_mode=WAL")
     # Aktifkan foreign key constraints (CASCADE delete)
@@ -41,9 +42,15 @@ def init_db():
         CREATE TABLE IF NOT EXISTS admin (
             id            INTEGER PRIMARY KEY AUTOINCREMENT,
             username      TEXT    NOT NULL UNIQUE,
-            password_hash TEXT    NOT NULL
+            password_hash TEXT    NOT NULL,
+            sekolah       TEXT
         )
     """)
+
+    # Migrasi database lama: akun tanpa sekolah adalah super admin.
+    admin_columns = [row[1] for row in cursor.execute("PRAGMA table_info(admin)").fetchall()]
+    if 'sekolah' not in admin_columns:
+        cursor.execute("ALTER TABLE admin ADD COLUMN sekolah TEXT")
 
     # ── Tabel 3: Hasil Kuesioner (FK → siswa.id dengan CASCADE) ────────────────
     cursor.execute("""
@@ -98,10 +105,25 @@ def init_db():
     existing = cursor.execute("SELECT COUNT(*) FROM admin").fetchone()[0]
     if existing == 0:
         cursor.execute(
-            "INSERT INTO admin (username, password_hash) VALUES (?, ?)",
+            "INSERT INTO admin (username, password_hash, sekolah) VALUES (?, ?, NULL)",
             ('admin', generate_password_hash('admin123'))
         )
         print("[DB] Admin default dibuat -> username: admin | password: admin123")
+
+    # Akun guru sekolah dibuat idempoten agar init_db() aman dipanggil ulang.
+    school_admins = [
+        ('admin_smkn2', 'AdminSMKN2!2026', 'SMKN 2 Yogyakarta'),
+        ('admin_smk3muhammadiyah', 'AdminSMK3!2026', 'SMK 3 Muhammadiyah Yogyakarta'),
+    ]
+    for username, password, school in school_admins:
+        cursor.execute(
+            """INSERT INTO admin (username, password_hash, sekolah)
+               VALUES (?, ?, ?)
+               ON CONFLICT(username) DO UPDATE SET
+                   password_hash = excluded.password_hash,
+                   sekolah = excluded.sekolah""",
+            (username, generate_password_hash(password), school)
+        )
 
     conn.commit()
     conn.close()

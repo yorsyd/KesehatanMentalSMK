@@ -17,6 +17,7 @@ mimetypes.add_type("text/javascript", ".js")
 # ── Inisialisasi Aplikasi ──────────────────────────────────────────────────────
 app = Flask(__name__, static_folder='templates', static_url_path='/templates')
 app.secret_key = os.environ.get('SECRET_KEY', 'kesehatan_mental_super_secret_key_998877')
+init_db()
 
 # Inisialisasi model FER sekali saat startup agar tidak reload setiap request.
 # Gunakan Haar cascade yang di-bundle bersama proyek — OpenCV 5.x tidak lagi
@@ -163,6 +164,7 @@ def admin_login():
                 session.clear()
                 session['admin_id']       = admin_user['id']
                 session['admin_username'] = admin_user['username']
+                session['admin_school']   = admin_user['sekolah']
                 return redirect(url_for('admin_dashboard'))
             else:
                 flash('Username atau password salah!', 'danger')
@@ -483,6 +485,7 @@ def admin_dashboard():
     """
     search        = request.args.get('search', '').strip()
     status_filter = request.args.get('filter', 'semua').strip()
+    admin_school  = session.get('admin_school')
 
     conn = get_db_connection()
 
@@ -495,6 +498,10 @@ def admin_dashboard():
         WHERE 1=1
     """
     params = []
+
+    if admin_school:
+        query += " AND s.sekolah = ?"
+        params.append(admin_school)
 
     if search:
         query += " AND (s.nama LIKE ? OR s.kelas LIKE ? OR s.jurusan LIKE ? OR s.sekolah LIKE ?)"
@@ -542,7 +549,7 @@ def admin_siswa_detail(siswa_id):
     conn  = get_db_connection()
     siswa = conn.execute('SELECT * FROM siswa WHERE id = ?', (siswa_id,)).fetchone()
 
-    if not siswa:
+    if not siswa or (session.get('admin_school') and siswa['sekolah'] != session['admin_school']):
         conn.close()
         return jsonify({'status': 'error', 'error': 'Siswa tidak ditemukan.'}), 404
 
@@ -636,10 +643,22 @@ def admin_siswa_delete(siswa_id):
     """
     conn = get_db_connection()
     try:
+        admin_school = session.get('admin_school')
         # Ambil semua path video sebelum dihapus dari DB
         deteksi_rows = conn.execute(
-            'SELECT video_path FROM hasil_deteksi WHERE siswa_id = ?', (siswa_id,)
+            """SELECT hd.video_path
+               FROM hasil_deteksi hd
+               INNER JOIN siswa s ON s.id = hd.siswa_id
+               WHERE hd.siswa_id = ? AND (? IS NULL OR s.sekolah = ?)""",
+            (siswa_id, admin_school, admin_school)
         ).fetchall()
+
+        if not deteksi_rows and not conn.execute(
+            'SELECT 1 FROM siswa WHERE id = ? AND (? IS NULL OR sekolah = ?)',
+            (siswa_id, admin_school, admin_school)
+        ).fetchone():
+            conn.close()
+            return jsonify({'error': 'Siswa tidak ditemukan.'}), 404
 
         # Hapus file video fisik
         for r in deteksi_rows:
@@ -648,7 +667,10 @@ def admin_siswa_delete(siswa_id):
                 _safe_remove(abs_path)
 
         # Hapus data siswa (CASCADE akan hapus kuesioner & deteksi otomatis)
-        conn.execute('DELETE FROM siswa WHERE id = ?', (siswa_id,))
+        conn.execute(
+            'DELETE FROM siswa WHERE id = ? AND (? IS NULL OR sekolah = ?)',
+            (siswa_id, admin_school, admin_school)
+        )
         conn.commit()
         conn.close()
 
@@ -664,5 +686,4 @@ def admin_siswa_delete(siswa_id):
 
 # ── Entry Point ───────────────────────────────────────────────────────────────
 if __name__ == '__main__':
-    init_db()
     app.run(debug=True, port=5001)
